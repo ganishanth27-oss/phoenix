@@ -1,0 +1,172 @@
+.permissions-page {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.permissions-header {
+  margin-bottom: 24px;
+}
+
+.permissions-header h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.permissions-header p {
+  margin-top: 8px;
+  color: #6b7280;
+}
+
+.permissions-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.manager-selector {
+  max-width: 600px;
+}
+
+.manager-selector label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.manager-selector select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: white;
+  font-size: 15px;
+}
+
+.permissions-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 32px 0 18px;
+}
+
+.permissions-title h2 {
+  margin: 0;
+}
+
+.permissions-title p {
+  margin: 6px 0 0;
+  color: #6b7280;
+}
+
+.permissions-title span {
+  background: #f3f4f6;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.permission-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.permission-item:hover {
+  border-color: #9ca3af;
+}
+
+.permission-item.selected {
+  border-color: #111827;
+  background: #f9fafb;
+}
+
+.permission-item input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+}
+
+.permission-item strong {
+  display: block;
+  font-size: 15px;
+}
+
+.permission-item p {
+  margin: 5px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.permissions-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.permissions-actions button {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  background: #111827;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.permissions-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.permission-empty {
+  text-align: center;
+  padding: 70px 20px;
+  color: #6b7280;
+}
+
+.permission-empty div {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.permission-empty h3 {
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.permissions-loading {
+  padding: 50px;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .permissions-page {
+    padding: 20px;
+  }
+
+  .permissions-card {
+    padding: 18px;
+  }
+
+  .permissions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .permissions-title {
+    align-items: flex-start;
+    gap: 15px;
+  }
+}

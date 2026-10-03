@@ -1,0 +1,194 @@
+.activity-page {
+  min-height: 100vh;
+  background: #f6f7fb;
+  padding: 32px;
+  color: #111827;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.activity-header span {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #6b7280;
+}
+
+.activity-header h1 {
+  margin: 6px 0;
+  font-size: 32px;
+}
+
+.activity-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.activity-back-button {
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #374151;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.activity-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
+}
+
+.activity-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.activity-card-header h2 {
+  margin: 0 0 5px;
+}
+
+.activity-card-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.refresh-activity-button {
+  border: none;
+  background: #111827;
+  color: white;
+  border-radius: 9px;
+  padding: 10px 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.activity-table-wrapper {
+  overflow-x: auto;
+}
+
+.activity-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.activity-table th {
+  text-align: left;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 13px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.activity-table td {
+  padding: 15px 13px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.activity-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.activity-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.activity-user strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.activity-user small {
+  color: #9ca3af;
+}
+
+.role-badge,
+.action-badge {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.role-badge {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.action-badge {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.activity-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.activity-icon {
+  font-size: 42px;
+  margin-bottom: 12px;
+}
+
+.activity-empty h3 {
+  color: #111827;
+  margin: 0 0 7px;
+}
+
+.activity-empty p {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .activity-page {
+    padding: 20px;
+  }
+
+  .activity-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .activity-back-button {
+    width: 100%;
+  }
+
+  .activity-card {
+    padding: 18px;
+  }
+
+  .activity-card-header {
+    align-items: flex-start;
+    gap: 15px;
+  }
+}
