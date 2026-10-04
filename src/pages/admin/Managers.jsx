@@ -16,18 +16,29 @@ function Managers() {
     password: "",
   });
 
+  // Render backend URL from .env
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     loadManagers();
   }, []);
+
+  // =========================
+  // LOAD MANAGERS
+  // =========================
 
   const loadManagers = async () => {
     setLoading(true);
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, name, email, phone, role, status, created_at")
+      .select(
+        "id, name, email, phone, role, status, created_at"
+      )
       .eq("role", "manager")
-      .order("created_at", { ascending: false });
+      .order("created_at", {
+        ascending: false,
+      });
 
     if (error) {
       console.error(error);
@@ -39,6 +50,10 @@ function Managers() {
     setLoading(false);
   };
 
+  // =========================
+  // HANDLE INPUT
+  // =========================
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -47,6 +62,10 @@ function Managers() {
       [name]: value,
     }));
   };
+
+  // =========================
+  // CREATE MANAGER
+  // =========================
 
   const handleCreateManager = async (e) => {
     e.preventDefault();
@@ -61,26 +80,39 @@ function Managers() {
       return;
     }
 
+    if (!API_URL) {
+      alert(
+        "Backend API URL is not configured. Please check your .env file."
+      );
+      return;
+    }
+
     setCreating(true);
 
     try {
+      // Get currently logged-in admin session
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (!session) {
-        alert("Your admin session has expired. Please login again.");
+        alert(
+          "Your admin session has expired. Please login again."
+        );
         return;
       }
 
+      // Send request to Render backend
       const response = await fetch(
-        "http://localhost:8000/api/admin/managers",
+        `${API_URL}/api/admin/managers`,
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
+
           body: JSON.stringify({
             name: form.name,
             email: form.email,
@@ -100,6 +132,7 @@ function Managers() {
 
       alert("Manager created successfully.");
 
+      // Reset form
       setForm({
         name: "",
         email: "",
@@ -107,20 +140,35 @@ function Managers() {
         password: "",
       });
 
+      // Close form
       setShowForm(false);
 
+      // Refresh manager list
       await loadManagers();
     } catch (error) {
-      console.error(error);
-      alert(error.message);
+      console.error(
+        "Create manager error:",
+        error
+      );
+
+      alert(
+        error.message ||
+          "Unable to connect to the backend."
+      );
     } finally {
       setCreating(false);
     }
   };
 
+  // =========================
+  // TOGGLE MANAGER STATUS
+  // =========================
+
   const handleToggleStatus = async (manager) => {
     const newStatus =
-      manager.status === "active" ? "inactive" : "active";
+      manager.status === "active"
+        ? "inactive"
+        : "active";
 
     const { error } = await supabase
       .from("profiles")
@@ -135,18 +183,47 @@ function Managers() {
       return;
     }
 
-    loadManagers();
+    await loadManagers();
   };
+
+  // =========================
+  // CLOSE FORM
+  // =========================
+
+  const handleCloseForm = () => {
+    if (creating) {
+      return;
+    }
+
+    setShowForm(false);
+
+    setForm({
+      name: "",
+      email: "",
+      phone: "",
+      password: "",
+    });
+  };
+
+  // =========================
+  // UI
+  // =========================
 
   return (
     <div className="managers-page">
 
-      {/* Header */}
+      {/* =========================
+          HEADER
+      ========================= */}
+
       <div className="managers-header">
+
         <div>
           <h1>Managers</h1>
+
           <p>
-            Manage PHOENIX managers and their account status.
+            Manage PHOENIX managers and their
+            account status.
           </p>
         </div>
 
@@ -156,27 +233,36 @@ function Managers() {
         >
           + Add Manager
         </button>
+
       </div>
 
-      {/* Add Manager Form */}
+      {/* =========================
+          ADD MANAGER FORM
+      ========================= */}
+
       {showForm && (
         <div className="manager-form-card">
 
           <div className="manager-form-header">
+
             <div>
               <h2>Create Manager</h2>
+
               <p>
-                Create a new manager account for PHOENIX.
+                Create a new manager account for
+                PHOENIX.
               </p>
             </div>
 
             <button
               className="close-form-btn"
-              onClick={() => setShowForm(false)}
+              onClick={handleCloseForm}
               type="button"
+              disabled={creating}
             >
               ×
             </button>
+
           </div>
 
           <form
@@ -184,10 +270,15 @@ function Managers() {
             onSubmit={handleCreateManager}
           >
 
+            {/* NAME + EMAIL */}
+
             <div className="form-row">
 
               <div className="form-group">
-                <label>Full Name</label>
+
+                <label>
+                  Full Name
+                </label>
 
                 <input
                   type="text"
@@ -197,10 +288,14 @@ function Managers() {
                   onChange={handleChange}
                   required
                 />
+
               </div>
 
               <div className="form-group">
-                <label>Email</label>
+
+                <label>
+                  Email
+                </label>
 
                 <input
                   type="email"
@@ -210,14 +305,20 @@ function Managers() {
                   onChange={handleChange}
                   required
                 />
+
               </div>
 
             </div>
 
+            {/* PHONE + PASSWORD */}
+
             <div className="form-row">
 
               <div className="form-group">
-                <label>Phone</label>
+
+                <label>
+                  Phone
+                </label>
 
                 <input
                   type="tel"
@@ -226,10 +327,14 @@ function Managers() {
                   value={form.phone}
                   onChange={handleChange}
                 />
+
               </div>
 
               <div className="form-group">
-                <label>Password</label>
+
+                <label>
+                  Password
+                </label>
 
                 <input
                   type="password"
@@ -240,16 +345,19 @@ function Managers() {
                   minLength={6}
                   required
                 />
+
               </div>
 
             </div>
+
+            {/* FORM ACTIONS */}
 
             <div className="manager-form-actions">
 
               <button
                 type="button"
                 className="cancel-manager-btn"
-                onClick={() => setShowForm(false)}
+                onClick={handleCloseForm}
                 disabled={creating}
               >
                 Cancel
@@ -268,32 +376,49 @@ function Managers() {
             </div>
 
           </form>
+
         </div>
       )}
 
-      {/* Managers List */}
+      {/* =========================
+          MANAGERS LIST
+      ========================= */}
+
       <div className="managers-card">
 
         <div className="managers-card-header">
-          <h2>All Managers</h2>
+
+          <h2>
+            All Managers
+          </h2>
 
           <span>
             {managers.length} managers
           </span>
+
         </div>
 
+        {/* LOADING */}
+
         {loading ? (
+
           <div className="empty-message">
             Loading managers...
           </div>
+
         ) : managers.length === 0 ? (
+
+          /* EMPTY STATE */
+
           <div className="empty-message">
 
             <div className="empty-icon">
               👤
             </div>
 
-            <h3>No managers yet</h3>
+            <h3>
+              No managers yet
+            </h3>
 
             <p>
               Add a manager to start assigning
@@ -301,12 +426,17 @@ function Managers() {
             </p>
 
           </div>
+
         ) : (
+
+          /* MANAGERS TABLE */
+
           <div className="managers-table-wrapper">
 
             <table className="managers-table">
 
               <thead>
+
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
@@ -315,12 +445,16 @@ function Managers() {
                   <th>Created</th>
                   <th>Actions</th>
                 </tr>
+
               </thead>
 
               <tbody>
 
                 {managers.map((manager) => (
+
                   <tr key={manager.id}>
+
+                    {/* NAME */}
 
                     <td>
                       <strong>
@@ -328,15 +462,22 @@ function Managers() {
                       </strong>
                     </td>
 
+                    {/* EMAIL */}
+
                     <td>
                       {manager.email}
                     </td>
+
+                    {/* PHONE */}
 
                     <td>
                       {manager.phone || "—"}
                     </td>
 
+                    {/* STATUS */}
+
                     <td>
+
                       <span
                         className={
                           manager.status === "active"
@@ -346,28 +487,40 @@ function Managers() {
                       >
                         {manager.status}
                       </span>
+
                     </td>
 
+                    {/* CREATED */}
+
                     <td>
+
                       {new Date(
                         manager.created_at
                       ).toLocaleDateString()}
+
                     </td>
 
+                    {/* ACTION */}
+
                     <td>
+
                       <button
                         className="status-btn"
                         onClick={() =>
-                          handleToggleStatus(manager)
+                          handleToggleStatus(
+                            manager
+                          )
                         }
                       >
                         {manager.status === "active"
                           ? "Deactivate"
                           : "Activate"}
                       </button>
+
                     </td>
 
                   </tr>
+
                 ))}
 
               </tbody>
@@ -375,6 +528,7 @@ function Managers() {
             </table>
 
           </div>
+
         )}
 
       </div>

@@ -5,6 +5,8 @@ import "./Register.css";
 function Register() {
   const navigate = useNavigate();
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -32,28 +34,23 @@ function Register() {
     setError("");
     setSuccess("");
 
-    if (
-      !form.name ||
-      !form.email ||
-      !form.password
-    ) {
-      setError(
-        "Name, email and password are required."
-      );
+    if (!form.name || !form.email || !form.password) {
+      setError("Name, email and password are required.");
       return;
     }
 
     if (form.password.length < 6) {
-      setError(
-        "Password must be at least 6 characters."
-      );
+      setError("Password must be at least 6 characters.");
       return;
     }
 
-    if (
-      form.password !== form.confirmPassword
-    ) {
+    if (form.password !== form.confirmPassword) {
       setError("Passwords do not match.");
+      return;
+    }
+
+    if (!API_URL) {
+      setError("Backend API URL is not configured.");
       return;
     }
 
@@ -61,7 +58,7 @@ function Register() {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/auth/register",
+        `${API_URL}/api/auth/register`,
         {
           method: "POST",
           headers: {
@@ -80,8 +77,7 @@ function Register() {
 
       if (!response.ok || !result.success) {
         throw new Error(
-          result.message ||
-            "Registration failed."
+          result.message || "Registration failed."
         );
       }
 
@@ -101,8 +97,11 @@ function Register() {
         navigate("/");
       }, 1500);
     } catch (error) {
-      console.error(error);
-      setError(error.message);
+      console.error("Registration error:", error);
+
+      setError(
+        error.message || "Unable to connect to the backend."
+      );
     } finally {
       setLoading(false);
     }
@@ -110,7 +109,6 @@ function Register() {
 
   return (
     <div className="register-page">
-
       <div className="register-card">
 
         <div className="register-logo">
@@ -230,7 +228,6 @@ function Register() {
         </p>
 
       </div>
-
     </div>
   );
 }
