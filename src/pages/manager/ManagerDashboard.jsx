@@ -29,7 +29,10 @@ function ManagerDashboard() {
         return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
+      const {
+        data: profileData,
+        error: profileError,
+      } = await supabase
         .from("profiles")
         .select("id, name, email, phone, role, status")
         .eq("id", user.id)
@@ -50,18 +53,20 @@ function ManagerDashboard() {
 
       setProfile(profileData);
 
-      const { data: permissionData, error: permissionError } =
-        await supabase
-          .from("manager_permissions")
-          .select(`
-            permission_id,
-            permissions (
-              id,
-              name,
-              description
-            )
-          `)
-          .eq("manager_id", user.id);
+      const {
+        data: permissionData,
+        error: permissionError,
+      } = await supabase
+        .from("manager_permissions")
+        .select(`
+          permission_id,
+          permissions (
+            id,
+            name,
+            description
+          )
+        `)
+        .eq("manager_id", user.id);
 
       if (permissionError) {
         throw permissionError;
@@ -89,6 +94,23 @@ function ManagerDashboard() {
     navigate("/");
   };
 
+  /*
+   * Open the real project management page.
+   *
+   * The actual project creation form is inside
+   * ManagerProjects.jsx.
+   */
+  const handleCreateProject = () => {
+    if (!hasPermission("create_projects")) {
+      alert(
+        "You do not have permission to create projects."
+      );
+      return;
+    }
+
+    navigate("/manager/projects");
+  };
+
   if (loading) {
     return (
       <div className="manager-loading">
@@ -103,18 +125,26 @@ function ManagerDashboard() {
   return (
     <div className="manager-dashboard">
 
-      {/* SIDEBAR */}
+      {/* =====================================================
+          SIDEBAR
+      ===================================================== */}
+
       <aside className="manager-sidebar">
 
         <div className="manager-brand">
+
           <div className="manager-logo">
-            <img src={logo} alt="PHOENIX Logo" />
+            <img
+              src={logo}
+              alt="PHOENIX Logo"
+            />
           </div>
 
           <div className="manager-brand-text">
             <h2>PHOENIX</h2>
             <span>Manager Portal</span>
           </div>
+
         </div>
 
         <div className="manager-sidebar-label">
@@ -123,72 +153,132 @@ function ManagerDashboard() {
 
         <nav className="manager-nav">
 
-          {/* Dashboard is always available */}
+          {/* Dashboard */}
+
           <button
             className="manager-nav-item active"
             onClick={() => navigate("/manager")}
           >
-            <span className="manager-nav-icon">⌂</span>
-            <span>Dashboard</span>
+            <span className="manager-nav-icon">
+              ⌂
+            </span>
+
+            <span>
+              Dashboard
+            </span>
           </button>
+
+          {/* Users */}
 
           {hasPermission("view_users") && (
             <button
               className="manager-nav-item"
-              onClick={() => navigate("/manager/users")}
+              onClick={() =>
+                navigate("/manager/users")
+              }
             >
-              <span className="manager-nav-icon">♙</span>
-              <span>Users</span>
+              <span className="manager-nav-icon">
+                ♙
+              </span>
+
+              <span>
+                Users
+              </span>
             </button>
           )}
+
+          {/* Projects */}
 
           {hasPermission("view_projects") && (
             <button
               className="manager-nav-item"
-              onClick={() => navigate("/manager/projects")}
+              onClick={() =>
+                navigate("/manager/projects")
+              }
             >
-              <span className="manager-nav-icon">▤</span>
-              <span>Projects</span>
+              <span className="manager-nav-icon">
+                ▤
+              </span>
+
+              <span>
+                Projects
+              </span>
             </button>
           )}
+
+          {/* Tasks */}
 
           {hasPermission("view_tasks") && (
             <button
               className="manager-nav-item"
-              onClick={() => navigate("/manager/tasks")}
+              onClick={() =>
+                navigate("/manager/tasks")
+              }
             >
-              <span className="manager-nav-icon">✓</span>
-              <span>Tasks</span>
+              <span className="manager-nav-icon">
+                ✓
+              </span>
+
+              <span>
+                Tasks
+              </span>
             </button>
           )}
+
+          {/* Files */}
 
           {hasPermission("upload_files") && (
             <button
               className="manager-nav-item"
-              onClick={() => navigate("/manager/files")}
+              onClick={() =>
+                navigate("/manager/files")
+              }
             >
-              <span className="manager-nav-icon">⌕</span>
-              <span>Files</span>
+              <span className="manager-nav-icon">
+                ⌕
+              </span>
+
+              <span>
+                Files
+              </span>
             </button>
           )}
+
+          {/* Review */}
 
           {hasPermission("review_work") && (
             <button
               className="manager-nav-item"
-              onClick={() => navigate("/manager/review")}
+              onClick={() =>
+                navigate("/manager/review")
+              }
             >
-              <span className="manager-nav-icon">◉</span>
-              <span>Review Work</span>
+              <span className="manager-nav-icon">
+                ◉
+              </span>
+
+              <span>
+                Review Work
+              </span>
             </button>
           )}
+
+          {/* Reports */}
 
           {hasPermission("view_reports") && (
             <button
               className="manager-nav-item"
-              onClick={() => navigate("/manager/reports")}
+              onClick={() =>
+                navigate("/manager/reports")
+              }
             >
-              <span className="manager-nav-icon">▥</span>
-              <span>Reports</span>
+              <span className="manager-nav-icon">
+                ▥
+              </span>
+
+              <span>
+                Reports
+              </span>
             </button>
           )}
 
@@ -201,13 +291,17 @@ function ManagerDashboard() {
         <div className="manager-sidebar-bottom">
 
           <div className="manager-mini-profile">
+
             <div className="manager-mini-avatar">
               {profile?.name
-                ? profile.name.charAt(0).toUpperCase()
+                ? profile.name
+                    .charAt(0)
+                    .toUpperCase()
                 : "M"}
             </div>
 
             <div className="manager-mini-info">
+
               <strong>
                 {profile?.name || "Manager"}
               </strong>
@@ -215,39 +309,58 @@ function ManagerDashboard() {
               <span>
                 Manager
               </span>
+
             </div>
+
           </div>
 
           <button
             className="manager-logout"
             onClick={handleLogout}
           >
-            <span>↪</span>
-            <span>Logout</span>
+            <span>
+              ↪
+            </span>
+
+            <span>
+              Logout
+            </span>
           </button>
 
         </div>
 
       </aside>
 
-      {/* MAIN */}
+      {/* =====================================================
+          MAIN
+      ===================================================== */}
+
       <main className="manager-main">
 
-        {/* TOPBAR */}
+        {/* =================================================
+            TOPBAR
+        ================================================= */}
+
         <header className="manager-topbar">
 
           <div>
+
             <div className="manager-breadcrumb">
-              PHOENIX <span>/</span> Manager Dashboard
+              PHOENIX
+              <span>/</span>
+              Manager Dashboard
             </div>
 
             <h1>
-              Welcome back, {profile?.name || "Manager"} 👋
+              Welcome back,{" "}
+              {profile?.name || "Manager"} 👋
             </h1>
 
             <p>
-              Manage your assigned workspace and keep your team moving.
+              Manage your assigned workspace and
+              keep your team moving.
             </p>
+
           </div>
 
           <div className="manager-topbar-right">
@@ -263,12 +376,17 @@ function ManagerDashboard() {
             <div className="manager-profile">
 
               <div className="manager-avatar">
+
                 {profile?.name
-                  ? profile.name.charAt(0).toUpperCase()
+                  ? profile.name
+                      .charAt(0)
+                      .toUpperCase()
                   : "M"}
+
               </div>
 
               <div>
+
                 <strong>
                   {profile?.name || "Manager"}
                 </strong>
@@ -276,6 +394,7 @@ function ManagerDashboard() {
                 <span>
                   Manager
                 </span>
+
               </div>
 
             </div>
@@ -284,8 +403,13 @@ function ManagerDashboard() {
 
         </header>
 
-        {/* STATS */}
+        {/* =================================================
+            STATS
+        ================================================= */}
+
         <section className="manager-stats">
+
+          {/* PROJECT ACCESS */}
 
           <div className="manager-stat-card">
 
@@ -294,7 +418,10 @@ function ManagerDashboard() {
             </div>
 
             <div>
-              <span>PROJECT ACCESS</span>
+
+              <span>
+                PROJECT ACCESS
+              </span>
 
               <strong>
                 {hasPermission("view_projects")
@@ -305,9 +432,12 @@ function ManagerDashboard() {
               <small>
                 Project management
               </small>
+
             </div>
 
           </div>
+
+          {/* TASK ACCESS */}
 
           <div className="manager-stat-card">
 
@@ -316,7 +446,10 @@ function ManagerDashboard() {
             </div>
 
             <div>
-              <span>TASK ACCESS</span>
+
+              <span>
+                TASK ACCESS
+              </span>
 
               <strong>
                 {hasPermission("view_tasks")
@@ -327,9 +460,12 @@ function ManagerDashboard() {
               <small>
                 Task management
               </small>
+
             </div>
 
           </div>
+
+          {/* USER ACCESS */}
 
           <div className="manager-stat-card">
 
@@ -338,7 +474,10 @@ function ManagerDashboard() {
             </div>
 
             <div>
-              <span>USER ACCESS</span>
+
+              <span>
+                USER ACCESS
+              </span>
 
               <strong>
                 {hasPermission("view_users")
@@ -349,9 +488,12 @@ function ManagerDashboard() {
               <small>
                 Assigned customers
               </small>
+
             </div>
 
           </div>
+
+          {/* PERMISSIONS */}
 
           <div className="manager-stat-card">
 
@@ -360,7 +502,10 @@ function ManagerDashboard() {
             </div>
 
             <div>
-              <span>PERMISSIONS</span>
+
+              <span>
+                PERMISSIONS
+              </span>
 
               <strong>
                 {permissions.length}
@@ -369,13 +514,17 @@ function ManagerDashboard() {
               <small>
                 Active permissions
               </small>
+
             </div>
 
           </div>
 
         </section>
 
-        {/* WELCOME */}
+        {/* =================================================
+            WELCOME
+        ================================================= */}
+
         <section className="manager-welcome">
 
           <div className="manager-welcome-content">
@@ -389,36 +538,69 @@ function ManagerDashboard() {
             </h2>
 
             <p>
-              Access projects, tasks, customers, files and reports
-              based on the permissions assigned by your administrator.
+              Access projects, tasks, customers,
+              files and reports based on the
+              permissions assigned by your
+              administrator.
             </p>
 
             <div className="manager-welcome-actions">
 
+              {/* VIEW PROJECTS */}
+
               {hasPermission("view_projects") && (
                 <button
-                  onClick={() => navigate("/manager/projects")}
+                  onClick={() =>
+                    navigate("/manager/projects")
+                  }
                 >
                   View Projects
-                  <span>→</span>
+                  <span>
+                    →
+                  </span>
                 </button>
               )}
+
+              {/* CREATE PROJECT */}
+
+              {hasPermission("create_projects") && (
+                <button
+                  onClick={handleCreateProject}
+                >
+                  Create Project
+                  <span>
+                    +
+                  </span>
+                </button>
+              )}
+
+              {/* VIEW TASKS */}
 
               {hasPermission("view_tasks") && (
                 <button
-                  onClick={() => navigate("/manager/tasks")}
+                  onClick={() =>
+                    navigate("/manager/tasks")
+                  }
                 >
                   View Tasks
-                  <span>→</span>
+                  <span>
+                    →
+                  </span>
                 </button>
               )}
 
+              {/* VIEW USERS */}
+
               {hasPermission("view_users") && (
                 <button
-                  onClick={() => navigate("/manager/users")}
+                  onClick={() =>
+                    navigate("/manager/users")
+                  }
                 >
                   View Users
-                  <span>→</span>
+                  <span>
+                    →
+                  </span>
                 </button>
               )}
 
@@ -427,12 +609,18 @@ function ManagerDashboard() {
           </div>
 
           <div className="manager-welcome-logo">
-            <img src={logo} alt="PHOENIX" />
+            <img
+              src={logo}
+              alt="PHOENIX"
+            />
           </div>
 
         </section>
 
-        {/* ACCESS CONTROL */}
+        {/* =================================================
+            ACCESS CONTROL
+        ================================================= */}
+
         <section className="manager-permissions-card">
 
           <div className="manager-section-header">
@@ -448,14 +636,20 @@ function ManagerDashboard() {
               </h2>
 
               <p>
-                Features currently assigned to your manager account.
+                Features currently assigned to
+                your manager account.
               </p>
 
             </div>
 
             <div className="manager-permission-count">
+
               {permissions.length}
-              <span>permissions</span>
+
+              <span>
+                permissions
+              </span>
+
             </div>
 
           </div>
@@ -473,8 +667,9 @@ function ManagerDashboard() {
               </h3>
 
               <p>
-                Please contact the PHOENIX administrator
-                to receive access to manager features.
+                Please contact the PHOENIX
+                administrator to receive access
+                to manager features.
               </p>
 
             </div>
@@ -483,17 +678,26 @@ function ManagerDashboard() {
 
             <div className="permission-tags">
 
-              {permissions.map((permission) => (
+              {permissions.map(
+                (permission) => (
 
-                <div
-                  className="permission-tag"
-                  key={permission}
-                >
-                  <span>✓</span>
-                  {permission.replaceAll("_", " ")}
-                </div>
+                  <div
+                    className="permission-tag"
+                    key={permission}
+                  >
+                    <span>
+                      ✓
+                    </span>
 
-              ))}
+                    {permission.replaceAll(
+                      "_",
+                      " "
+                    )}
+
+                  </div>
+
+                )
+              )}
 
             </div>
 
