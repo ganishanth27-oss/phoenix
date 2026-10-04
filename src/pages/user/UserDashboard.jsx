@@ -1,25 +1,27 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import logo from "../../assets/phoenix-logo.png";
+import DashboardLayout from "../../components/DashboardLayout";
+import phoenixLogo from "../../assets/phoenix-logo.png";
 import "./UserDashboard.css";
 
 function UserDashboard() {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
-  const [services, setServices] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [services, setServices] = useState([]);
 
-  const [showRequestForm, setShowRequestForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const [form, setForm] = useState({
+  const [requestForm, setRequestForm] = useState({
     title: "",
-    service_id: "",
     description: "",
     requirements: "",
+    service_id: "",
     priority: "medium",
   });
 
@@ -27,10 +29,10 @@ function UserDashboard() {
     loadDashboard();
   }, []);
 
-  const loadDashboard = async () => {
-    setLoading(true);
-
+  async function loadDashboard() {
     try {
+      setLoading(true);
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -40,25 +42,18 @@ function UserDashboard() {
         return;
       }
 
-      // =========================
-      // PROFILE
-      // =========================
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-      const { data: profileData, error: profileError } =
-        await supabase
-          .from("profiles")
-          .select("id, name, email, phone, role, status")
-          .eq("id", user.id)
-          .single();
-
-      if (profileError) {
-        throw profileError;
+      if (profileError || !profileData) {
+        navigate("/");
+        return;
       }
 
-      if (
-        profileData.role !== "user" ||
-        profileData.status !== "active"
-      ) {
+      if (profileData.status !== "active") {
         await supabase.auth.signOut();
         navigate("/");
         return;
@@ -67,211 +62,210 @@ function UserDashboard() {
       setProfile(profileData);
 
       // =========================
-      // SERVICES + REQUESTS
+      // LOAD SERVICES
       // =========================
 
-      const [servicesResult, requestsResult] =
-        await Promise.all([
-          supabase
-            .from("services")
-            .select("id, name, description")
-            .eq("status", "active")
-            .order("name"),
+      const { data: serviceData } = await supabase
+        .from("services")
+        .select("id, name")
+        .eq("status", "active")
+        .order("name");
 
-          supabase
-            .from("user_requests")
-            .select(`
-              id,
-              title,
-              description,
-              requirements,
-              priority,
-              status,
-              due_date,
-              manager_id,
-              manager_notes,
-              admin_notes,
-              created_at,
-              updated_at,
-              services:service_id (
-                name
-              ),
-              managers:manager_id (
-                name,
-                email
-              )
-            `)
-            .eq("user_id", user.id)
-            .order("created_at", {
-              ascending: false,
-            }),
-        ]);
+      setServices(serviceData || []);
 
-      if (servicesResult.error) {
-        throw servicesResult.error;
+      // =========================
+      // LOAD USER REQUESTS
+      // =========================
+
+      const { data: requestData, error: requestError } = await supabase
+        .from("user_requests")
+        .select(`
+          *,
+          services (
+            name
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (requestError) {
+        console.error("Request loading error:", requestError);
       }
 
-      if (requestsResult.error) {
-        throw requestsResult.error;
+      setRequests(requestData || []);
+
+      // =========================
+      // LOAD USER PROJECTS
+      // =========================
+
+      const { data: projectUsers, error: projectUsersError } =
+        await supabase
+          .from("project_users")
+          .select("project_id")
+          .eq("user_id", user.id);
+
+      if (projectUsersError) {
+        console.error(projectUsersError);
+        setProjects([]);
+        return;
       }
 
-      setServices(servicesResult.data || []);
-      setRequests(requestsResult.data || []);
-    } catch (error) {
-      console.error("User dashboard error:", error);
-
-      alert(
-        error.message || "Unable to load dashboard."
+      const projectIds = (projectUsers || []).map(
+        (item) => item.project_id
       );
+
+      if (projectIds.length > 0) {
+        const { data: projectData, error: projectError } = await supabase
+          .from("projects")
+          .select(`
+            *,
+            services (
+              name
+            )
+          `)
+          .in("id", projectIds)
+          .order("created_at", { ascending: false });
+
+        if (projectError) {
+          console.error(projectError);
+        }
+
+        setProjects(projectData || []);
+      } else {
+        setProjects([]);
+      }
+    } catch (error) {
+      console.error("Dashboard error:", error);
     } finally {
       setLoading(false);
     }
-  };
-
-  // =========================
-  // FORM
-  // =========================
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-  };
+  }
 
   // =========================
   // SUBMIT REQUEST
   // =========================
 
-  const handleSubmitRequest = async (e) => {
-    e.preventDefault();
+  async function handleSubmitRequest(event) {
+    event.preventDefault();
 
-    if (!form.title.trim()) {
+    if (!requestForm.title.trim()) {
       alert("Please enter a request title.");
       return;
     }
 
-    if (!form.service_id) {
-      alert("Please select a service.");
-      return;
-    }
-
-    if (!form.description.trim()) {
+    if (!requestForm.description.trim()) {
       alert("Please describe what you need.");
       return;
     }
 
-    setSubmitting(true);
-
     try {
+      setSubmitting(true);
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (!user) {
+        alert("Your session has expired. Please login again.");
         navigate("/");
         return;
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("user_requests")
-        .insert({
-          user_id: user.id,
-          service_id: form.service_id,
-          title: form.title.trim(),
-          description: form.description.trim(),
-          requirements:
-            form.requirements.trim() || null,
-          priority: form.priority,
-          status: "submitted",
-        });
+        .insert([
+          {
+            user_id: user.id,
+            title: requestForm.title.trim(),
+            description: requestForm.description.trim(),
+            requirements: requestForm.requirements.trim() || null,
+            service_id: requestForm.service_id || null,
+            priority: requestForm.priority,
+            status: "submitted",
+          },
+        ])
+        .select(`
+          *,
+          services (
+            name
+          )
+        `)
+        .single();
 
       if (error) {
-        throw error;
+        console.error("Submit request error:", error);
+        alert(error.message);
+        return;
       }
 
-      alert(
-        "Request submitted successfully. Admin will review it shortly."
-      );
+      setRequests((previous) => [data, ...previous]);
 
-      setForm({
+      setRequestForm({
         title: "",
-        service_id: "",
         description: "",
         requirements: "",
+        service_id: "",
         priority: "medium",
       });
 
-      setShowRequestForm(false);
+      setShowRequestModal(false);
 
-      await loadDashboard();
+      alert("Request submitted successfully!");
     } catch (error) {
-      console.error(
-        "Request submission error:",
-        error
-      );
-
-      alert(
-        error.message || "Unable to submit request."
-      );
+      console.error(error);
+      alert("Something went wrong while submitting the request.");
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   // =========================
-  // LOGOUT
+  // HELPERS
   // =========================
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
-  };
-
-  // =========================
-  // STATUS
-  // =========================
-
-  const getStatusLabel = (status) => {
-    if (!status) {
-      return "Unknown";
-    }
-
-    return status
-      .replaceAll("_", " ")
-      .replace(/\b\w/g, (letter) =>
-        letter.toUpperCase()
-      );
-  };
-
-  const getStatusClass = (status) => {
-    return `request-status status-${status}`;
-  };
-
-  // =========================
-  // STATS
-  // =========================
-
-  const totalRequests = requests.length;
-
-  const underReview = requests.filter(
+  const activeRequests = requests.filter(
     (request) =>
-      request.status === "submitted" ||
-      request.status === "under_review"
+      !["completed", "rejected"].includes(request.status)
   ).length;
 
-  const inProgress = requests.filter(
-    (request) =>
-      request.status === "assigned" ||
-      request.status === "in_progress" ||
-      request.status === "waiting_for_user"
-  ).length;
-
-  const completed = requests.filter(
+  const completedRequests = requests.filter(
     (request) => request.status === "completed"
   ).length;
+
+  const activeProjects = projects.filter(
+    (project) =>
+      !["completed", "on_hold"].includes(project.status)
+  ).length;
+
+  function getStatusClass(status) {
+    return status?.replaceAll("_", "-") || "default";
+  }
+
+  function formatStatus(status) {
+    return status
+      ? status.replaceAll("_", " ").replace(/\b\w/g, (letter) =>
+          letter.toUpperCase()
+        )
+      : "Unknown";
+  }
+
+  function formatDate(date) {
+    if (!date) return "—";
+
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  const navigation = [
+    {
+      label: "Dashboard",
+      path: "/user",
+      icon: "⌂",
+    },
+  ];
 
   // =========================
   // LOADING
@@ -280,212 +274,66 @@ function UserDashboard() {
   if (loading) {
     return (
       <div className="user-loading">
-        <div className="user-loading-card">
-          <div className="user-loading-logo">
-            <img src={logo} alt="PHOENIX" />
-          </div>
-
-          <h2>Loading PHOENIX...</h2>
-
-          <p>Please wait.</p>
-        </div>
+        <div className="user-loader"></div>
+        <p>Loading your workspace...</p>
       </div>
     );
   }
 
   return (
-    <div className="user-dashboard">
+    <DashboardLayout
+      profile={profile}
+      navigation={navigation}
+      title="My Workspace"
+    >
+      <div className="user-dashboard">
 
-      {/* =========================
-          SIDEBAR
-      ========================= */}
+        {/* =========================
+            CENTER PHOENIX LOGO
+        ========================= */}
 
-      <aside className="user-sidebar">
-
-        <div className="user-brand">
-          <div className="user-brand-logo">
-            <img src={logo} alt="PHOENIX" />
-          </div>
-
-          <div>
-            <h2>PHOENIX</h2>
-            <span>User Workspace</span>
-          </div>
+        <div className="user-dashboard-center-logo">
+          <img
+            src={phoenixLogo}
+            alt="PHOENIX"
+          />
         </div>
 
-        <div className="user-sidebar-label">
-          WORKSPACE
-        </div>
+        {/* =========================
+            HERO
+        ========================= */}
 
-        <nav className="user-nav">
-
-          <button
-            className="user-nav-item active"
-            onClick={() => navigate("/user")}
-          >
-            <span>⌂</span>
-            <span>Dashboard</span>
-          </button>
-
-          <button
-            className="user-nav-item"
-            onClick={() => setShowRequestForm(true)}
-          >
-            <span>＋</span>
-            <span>New Request</span>
-          </button>
-
-          <button
-            className="user-nav-item"
-            onClick={() =>
-              document
-                .getElementById("my-requests")
-                ?.scrollIntoView({
-                  behavior: "smooth",
-                })
-            }
-          >
-            <span>▣</span>
-            <span>My Requests</span>
-          </button>
-
-          <button
-            className="user-nav-item"
-            onClick={() =>
-              alert(
-                "My Projects module will be connected next."
-              )
-            }
-          >
-            <span>▤</span>
-            <span>My Projects</span>
-          </button>
-
-          <button
-            className="user-nav-item"
-            onClick={() =>
-              alert(
-                "My Tasks module will be connected next."
-              )
-            }
-          >
-            <span>✓</span>
-            <span>My Tasks</span>
-          </button>
-
-          <button
-            className="user-nav-item"
-            onClick={() =>
-              alert(
-                "Files module will be connected next."
-              )
-            }
-          >
-            <span>□</span>
-            <span>Files</span>
-          </button>
-
-        </nav>
-
-        <div className="user-sidebar-label user-account-label">
-          ACCOUNT
-        </div>
-
-        <div className="user-sidebar-bottom">
-
-          <div className="user-profile-mini">
-
-            <div className="user-avatar">
-              {profile?.name
-                ?.charAt(0)
-                .toUpperCase() || "U"}
+        <section className="user-hero">
+          <div className="hero-content">
+            <div className="hero-small">
+              PHOENIX WORKSPACE
             </div>
-
-            <div>
-              <strong>
-                {profile?.name || "User"}
-              </strong>
-
-              <span>User Account</span>
-            </div>
-
-          </div>
-
-          <button
-            className="logout-button"
-            onClick={handleLogout}
-          >
-            <span>↪</span>
-            <span>Logout</span>
-          </button>
-
-        </div>
-
-      </aside>
-
-      {/* =========================
-          MAIN
-      ========================= */}
-
-      <main className="user-main">
-
-        {/* HEADER */}
-
-        <header className="user-header">
-
-          <div>
-            <div className="user-breadcrumb">
-              PHOENIX <span>/</span> User Dashboard
-            </div>
-
-            <p className="user-header-label">
-              CUSTOMER WORKSPACE
-            </p>
 
             <h1>
               Welcome back,{" "}
-              {profile?.name?.split(" ")[0] ||
-                "User"}{" "}
-              👋
+              <span>
+                {profile?.name?.split(" ")[0] || "there"}!
+              </span>
             </h1>
 
             <p>
-              Submit requests and track your work
-              with the PHOENIX team.
+              Manage your requests, track projects and stay updated
+              with your work — all in one place.
             </p>
-          </div>
-
-          <div className="user-header-right">
 
             <button
-              className="user-refresh"
-              onClick={loadDashboard}
-              title="Refresh"
+              className="primary-action"
+              onClick={() => setShowRequestModal(true)}
             >
-              ↻
+              <span>＋</span>
+              Submit a Request
             </button>
-
-            <div className="user-header-profile">
-
-              <div className="user-header-avatar">
-                {profile?.name
-                  ?.charAt(0)
-                  .toUpperCase() || "U"}
-              </div>
-
-              <div>
-                <strong>
-                  {profile?.name || "User"}
-                </strong>
-
-                <span>User</span>
-              </div>
-
-            </div>
-
           </div>
 
-        </header>
+          <div className="hero-orb">
+            <div className="orb-inner">P</div>
+          </div>
+        </section>
 
         {/* =========================
             STATS
@@ -494,174 +342,389 @@ function UserDashboard() {
         <section className="user-stats">
 
           <div className="user-stat-card">
-
-            <div className="stat-icon purple">
-              ▣
-            </div>
+            <div className="stat-icon purple">◫</div>
 
             <div>
-              <span>TOTAL REQUESTS</span>
-
-              <strong>{totalRequests}</strong>
-
-              <small>All submitted requests</small>
+              <span>My Requests</span>
+              <strong>{requests.length}</strong>
             </div>
-
           </div>
 
           <div className="user-stat-card">
-
-            <div className="stat-icon orange">
-              ◷
-            </div>
+            <div className="stat-icon blue">↗</div>
 
             <div>
-              <span>UNDER REVIEW</span>
-
-              <strong>{underReview}</strong>
-
-              <small>Waiting for review</small>
+              <span>Active Requests</span>
+              <strong>{activeRequests}</strong>
             </div>
-
           </div>
 
           <div className="user-stat-card">
-
-            <div className="stat-icon blue">
-              ⚙
-            </div>
+            <div className="stat-icon green">✓</div>
 
             <div>
-              <span>IN PROGRESS</span>
-
-              <strong>{inProgress}</strong>
-
-              <small>Currently being handled</small>
+              <span>Completed</span>
+              <strong>{completedRequests}</strong>
             </div>
-
           </div>
 
           <div className="user-stat-card">
-
-            <div className="stat-icon green">
-              ✓
-            </div>
+            <div className="stat-icon orange">▦</div>
 
             <div>
-              <span>COMPLETED</span>
-
-              <strong>{completed}</strong>
-
-              <small>Finished requests</small>
+              <span>Active Projects</span>
+              <strong>{activeProjects}</strong>
             </div>
+          </div>
+
+        </section>
+
+        {/* =========================
+            MAIN GRID
+        ========================= */}
+
+        <section className="user-main-grid">
+
+          {/* REQUESTS */}
+
+          <div className="user-panel requests-panel">
+
+            <div className="panel-heading">
+              <div>
+                <span className="panel-label">
+                  ACTIVITY
+                </span>
+
+                <h2>Recent Requests</h2>
+              </div>
+
+              <span className="count-badge">
+                {requests.length}
+              </span>
+            </div>
+
+            {requests.length === 0 ? (
+              <div className="empty-state">
+
+                <div className="empty-icon">
+                  ＋
+                </div>
+
+                <h3>No requests yet</h3>
+
+                <p>
+                  Tell us what you need and our team will take
+                  it from there.
+                </p>
+
+                <button
+                  onClick={() => setShowRequestModal(true)}
+                  className="outline-button"
+                >
+                  Create Request
+                </button>
+
+              </div>
+            ) : (
+              <div className="request-list">
+
+                {requests.slice(0, 5).map((request) => (
+                  <div
+                    className="request-item"
+                    key={request.id}
+                  >
+
+                    <div className="request-symbol">
+                      {request.title
+                        ?.charAt(0)
+                        ?.toUpperCase() || "R"}
+                    </div>
+
+                    <div className="request-info">
+
+                      <h3>
+                        {request.title}
+                      </h3>
+
+                      <div className="request-meta">
+
+                        <span>
+                          {request.services?.name ||
+                            "General Service"}
+                        </span>
+
+                        <span>•</span>
+
+                        <span>
+                          {formatDate(request.created_at)}
+                        </span>
+
+                      </div>
+
+                    </div>
+
+                    <span
+                      className={`status-pill ${getStatusClass(
+                        request.status
+                      )}`}
+                    >
+                      {formatStatus(request.status)}
+                    </span>
+
+                  </div>
+                ))}
+
+              </div>
+            )}
+
+          </div>
+
+          {/* PROJECTS */}
+
+          <div className="user-panel projects-panel">
+
+            <div className="panel-heading">
+
+              <div>
+                <span className="panel-label">
+                  WORKSPACE
+                </span>
+
+                <h2>My Projects</h2>
+              </div>
+
+              <span className="count-badge">
+                {projects.length}
+              </span>
+
+            </div>
+
+            {projects.length === 0 ? (
+              <div className="empty-state compact">
+
+                <div className="empty-icon">
+                  ▦
+                </div>
+
+                <h3>No projects assigned</h3>
+
+                <p>
+                  Your assigned projects will appear here.
+                </p>
+
+              </div>
+            ) : (
+              <div className="project-list">
+
+                {projects.slice(0, 4).map((project) => (
+                  <div
+                    className="project-item"
+                    key={project.id}
+                  >
+
+                    <div className="project-top">
+
+                      <div className="project-avatar">
+                        {project.name
+                          ?.charAt(0)
+                          ?.toUpperCase() || "P"}
+                      </div>
+
+                      <span
+                        className={`status-pill ${getStatusClass(
+                          project.status
+                        )}`}
+                      >
+                        {formatStatus(project.status)}
+                      </span>
+
+                    </div>
+
+                    <h3>
+                      {project.name}
+                    </h3>
+
+                    <p>
+                      {project.description ||
+                        project.services?.name ||
+                        "Phoenix project"}
+                    </p>
+
+                    <div className="project-date">
+
+                      <span>Due date</span>
+
+                      <strong>
+                        {formatDate(project.due_date)}
+                      </strong>
+
+                    </div>
+
+                  </div>
+                ))}
+
+              </div>
+            )}
 
           </div>
 
         </section>
 
         {/* =========================
-            WELCOME BANNER
+            BOTTOM
         ========================= */}
 
-        <section className="user-welcome">
+        <section className="user-bottom-grid">
 
-          <div className="user-welcome-content">
+          <div className="info-card">
 
-            <span className="user-welcome-label">
-              PHOENIX USER WORKSPACE
-            </span>
+            <div className="info-card-icon">
+              ✦
+            </div>
 
-            <h2>
-              Have something you need?
-            </h2>
+            <div>
+              <span>Need something new?</span>
 
-            <p>
-              Tell us what you need, choose the
-              service, and our team will review
-              your request and keep you updated.
-            </p>
+              <h3>
+                Start a new request
+              </h3>
+
+              <p>
+                Describe what you need and our team will review it.
+              </p>
+            </div>
 
             <button
-              onClick={() =>
-                setShowRequestForm(true)
-              }
+              onClick={() => setShowRequestModal(true)}
+              className="arrow-button"
             >
-              Create New Request
-              <span>→</span>
+              →
             </button>
 
           </div>
 
-          <div className="user-welcome-logo">
-            <img src={logo} alt="PHOENIX" />
+          <div className="profile-mini-card">
+
+            <div className="mini-avatar">
+              {profile?.name
+                ?.split(" ")
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase() || "U"}
+            </div>
+
+            <div>
+              <span>Your account</span>
+
+              <h3>
+                {profile?.name}
+              </h3>
+
+              <p>
+                {profile?.email}
+              </p>
+            </div>
+
+            <span className="active-dot">
+              Active
+            </span>
+
           </div>
 
         </section>
 
-        {/* =========================
-            REQUEST FORM
-        ========================= */}
+      </div>
 
-        {showRequestForm && (
-          <section className="request-form-card">
+      {/* =====================================================
+          SUBMIT REQUEST MODAL
+      ===================================================== */}
 
-            <div className="request-form-header">
+      {showRequestModal && (
+        <div
+          className="request-modal-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowRequestModal(false);
+            }
+          }}
+        >
+
+          <div className="request-modal">
+
+            <div className="request-modal-header">
 
               <div>
-                <span className="section-label">
-                  NEW REQUEST
-                </span>
+                <span>PHOENIX</span>
 
-                <h2>What do you need?</h2>
+                <h2>
+                  Submit a Request
+                </h2>
 
                 <p>
-                  Give us enough information so
-                  our team can understand your
-                  request clearly.
+                  Tell our team what you need.
                 </p>
               </div>
 
               <button
-                className="close-request-button"
                 type="button"
-                onClick={() =>
-                  setShowRequestForm(false)
-                }
+                className="modal-close"
+                onClick={() => setShowRequestModal(false)}
               >
                 ×
               </button>
 
             </div>
 
-            <form onSubmit={handleSubmitRequest}>
+            <form
+              className="request-form"
+              onSubmit={handleSubmitRequest}
+            >
 
-              <div className="request-form-grid">
+              {/* Title */}
 
-                <div className="request-field full">
+              <div className="form-group">
 
-                  <label>Request Title</label>
+                <label>
+                  Request Title
+                  <span>*</span>
+                </label>
 
-                  <input
-                    type="text"
-                    name="title"
-                    placeholder="Example: Create a company website"
-                    value={form.title}
-                    onChange={handleChange}
-                    required
-                  />
+                <input
+                  type="text"
+                  placeholder="Example: Create a company website"
+                  value={requestForm.title}
+                  onChange={(event) =>
+                    setRequestForm({
+                      ...requestForm,
+                      title: event.target.value,
+                    })
+                  }
+                  required
+                />
 
-                </div>
+              </div>
 
-                <div className="request-field">
+              {/* Service + Priority */}
 
-                  <label>Service</label>
+              <div className="form-row">
+
+                <div className="form-group">
+
+                  <label>
+                    Service
+                  </label>
 
                   <select
-                    name="service_id"
-                    value={form.service_id}
-                    onChange={handleChange}
-                    required
+                    value={requestForm.service_id}
+                    onChange={(event) =>
+                      setRequestForm({
+                        ...requestForm,
+                        service_id: event.target.value,
+                      })
+                    }
                   >
+
                     <option value="">
                       Select a service
                     </option>
@@ -674,19 +737,27 @@ function UserDashboard() {
                         {service.name}
                       </option>
                     ))}
+
                   </select>
 
                 </div>
 
-                <div className="request-field">
+                <div className="form-group">
 
-                  <label>Priority</label>
+                  <label>
+                    Priority
+                  </label>
 
                   <select
-                    name="priority"
-                    value={form.priority}
-                    onChange={handleChange}
+                    value={requestForm.priority}
+                    onChange={(event) =>
+                      setRequestForm({
+                        ...requestForm,
+                        priority: event.target.value,
+                      })
+                    }
                   >
+
                     <option value="low">
                       Low
                     </option>
@@ -702,52 +773,68 @@ function UserDashboard() {
                     <option value="urgent">
                       Urgent
                     </option>
+
                   </select>
-
-                </div>
-
-                <div className="request-field full">
-
-                  <label>
-                    What do you need?
-                  </label>
-
-                  <textarea
-                    name="description"
-                    placeholder="Explain what you want us to create or do..."
-                    value={form.description}
-                    onChange={handleChange}
-                    rows="5"
-                    required
-                  />
-
-                </div>
-
-                <div className="request-field full">
-
-                  <label>
-                    Additional Requirements
-                  </label>
-
-                  <textarea
-                    name="requirements"
-                    placeholder="Mention features, references, files, deadlines or other requirements..."
-                    value={form.requirements}
-                    onChange={handleChange}
-                    rows="4"
-                  />
 
                 </div>
 
               </div>
 
+              {/* Description */}
+
+              <div className="form-group">
+
+                <label>
+                  What do you need?
+                  <span>*</span>
+                </label>
+
+                <textarea
+                  rows="4"
+                  placeholder="Describe your request in detail..."
+                  value={requestForm.description}
+                  onChange={(event) =>
+                    setRequestForm({
+                      ...requestForm,
+                      description: event.target.value,
+                    })
+                  }
+                  required
+                />
+
+              </div>
+
+              {/* Requirements */}
+
+              <div className="form-group">
+
+                <label>
+                  Additional Requirements
+                </label>
+
+                <textarea
+                  rows="3"
+                  placeholder="Mention any specific features, references, deadline, etc."
+                  value={requestForm.requirements}
+                  onChange={(event) =>
+                    setRequestForm({
+                      ...requestForm,
+                      requirements: event.target.value,
+                    })
+                  }
+                />
+
+              </div>
+
+              {/* Buttons */}
+
               <div className="request-form-actions">
 
                 <button
                   type="button"
-                  className="cancel-request-button"
+                  className="cancel-request"
                   onClick={() =>
-                    setShowRequestForm(false)
+                    setShowRequestModal(false)
                   }
                   disabled={submitting}
                 >
@@ -756,7 +843,7 @@ function UserDashboard() {
 
                 <button
                   type="submit"
-                  className="submit-request-button"
+                  className="submit-request"
                   disabled={submitting}
                 >
                   {submitting
@@ -768,164 +855,12 @@ function UserDashboard() {
 
             </form>
 
-          </section>
-        )}
-
-        {/* =========================
-            MY REQUESTS
-        ========================= */}
-
-        <section
-          className="requests-section"
-          id="my-requests"
-        >
-
-          <div className="section-heading">
-
-            <div>
-              <span className="section-label">
-                REQUEST ACTIVITY
-              </span>
-
-              <h2>My Requests</h2>
-
-              <p>
-                Track the progress of everything
-                you have submitted.
-              </p>
-            </div>
-
-            <button
-              className="small-new-request"
-              onClick={() =>
-                setShowRequestForm(true)
-              }
-            >
-              + New Request
-            </button>
-
           </div>
 
-          {requests.length === 0 ? (
+        </div>
+      )}
 
-            <div className="empty-requests">
-
-              <div className="empty-request-icon">
-                +
-              </div>
-
-              <h3>No requests yet</h3>
-
-              <p>
-                Start by telling the PHOENIX team
-                what you need.
-              </p>
-
-              <button
-                onClick={() =>
-                  setShowRequestForm(true)
-                }
-              >
-                Create Your First Request
-              </button>
-
-            </div>
-
-          ) : (
-
-            <div className="request-list">
-
-              {requests.map((request) => (
-
-                <div
-                  className="request-card"
-                  key={request.id}
-                >
-
-                  <div className="request-card-main">
-
-                    <div className="request-card-icon">
-                      {request.services?.name
-                        ?.charAt(0)
-                        .toUpperCase() || "P"}
-                    </div>
-
-                    <div>
-
-                      <h3>
-                        {request.title}
-                      </h3>
-
-                      <p className="request-service">
-                        {request.services?.name ||
-                          "Service not selected"}
-                      </p>
-
-                      <p className="request-description">
-                        {request.description}
-                      </p>
-
-                      {request.manager_id && (
-                        <p className="request-manager">
-                          Manager:{" "}
-                          <strong>
-                            {request.managers?.name ||
-                              "Assigned"}
-                          </strong>
-                        </p>
-                      )}
-
-                      {request.due_date && (
-                        <p className="request-due-date">
-                          Due:{" "}
-                          {new Date(
-                            request.due_date
-                          ).toLocaleDateString()}
-                        </p>
-                      )}
-
-                    </div>
-
-                  </div>
-
-                  <div className="request-card-right">
-
-                    <span
-                      className={`priority priority-${request.priority}`}
-                    >
-                      {request.priority}
-                    </span>
-
-                    <span
-                      className={getStatusClass(
-                        request.status
-                      )}
-                    >
-                      {getStatusLabel(
-                        request.status
-                      )}
-                    </span>
-
-                    <span className="request-date">
-                      {new Date(
-                        request.created_at
-                      ).toLocaleDateString()}
-                    </span>
-
-                  </div>
-
-                </div>
-
-              ))}
-
-            </div>
-
-          )}
-
-        </section>
-
-      </main>
-    </div>
+    </DashboardLayout>
   );
 }
 

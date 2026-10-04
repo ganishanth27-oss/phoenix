@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 import "./Register.css";
 
 function Register() {
   const navigate = useNavigate();
 
-  const API_URL = import.meta.env.VITE_API_URL;
-
   const [form, setForm] = useState({
     name: "",
-    phone: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   });
@@ -19,28 +18,36 @@ function Register() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
 
     setForm((previous) => ({
       ...previous,
       [name]: value,
     }));
+
+    setError("");
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
+  const handleRegister = async (event) => {
+    event.preventDefault();
 
     setError("");
     setSuccess("");
 
-    if (!form.name || !form.email || !form.password) {
-      setError("Name, email and password are required.");
+    if (
+      !form.name.trim() ||
+      !form.email.trim() ||
+      !form.password
+    ) {
+      setError("Please fill in all required fields.");
       return;
     }
 
     if (form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(
+        "Password must contain at least 6 characters."
+      );
       return;
     }
 
@@ -49,58 +56,57 @@ function Register() {
       return;
     }
 
-    if (!API_URL) {
-      setError("Backend API URL is not configured.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/auth/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+      const {
+        data,
+        error: authError,
+      } = await supabase.auth.signUp({
+        email: form.email.trim(),
+        password: form.password,
+        options: {
+          data: {
+            name: form.name.trim(),
+            phone: form.phone.trim(),
           },
-          body: JSON.stringify({
-            name: form.name,
-            phone: form.phone,
-            email: form.email,
-            password: form.password,
-          }),
-        }
-      );
+        },
+      });
 
-      const result = await response.json();
+      if (authError) {
+        throw authError;
+      }
 
-      if (!response.ok || !result.success) {
+      if (!data.user) {
         throw new Error(
-          result.message || "Registration failed."
+          "Registration failed. Please try again."
         );
       }
 
       setSuccess(
-        "Account created successfully. Redirecting to login..."
+        "Account created successfully. You can now sign in."
       );
 
       setForm({
         name: "",
-        phone: "",
         email: "",
+        phone: "",
         password: "",
         confirmPassword: "",
       });
 
       setTimeout(() => {
         navigate("/");
-      }, 1500);
-    } catch (error) {
-      console.error("Registration error:", error);
+      }, 1800);
+    } catch (registerError) {
+      console.error(
+        "Registration error:",
+        registerError
+      );
 
       setError(
-        error.message || "Unable to connect to the backend."
+        registerError.message ||
+          "Unable to create your account."
       );
     } finally {
       setLoading(false);
@@ -108,127 +114,317 @@ function Register() {
   };
 
   return (
-    <div className="register-page">
-      <div className="register-card">
+    <main className="register-page">
 
-        <div className="register-logo">
-          P
+      {/* =====================================================
+          LEFT BRAND SECTION
+      ===================================================== */}
+
+      <section className="register-brand">
+
+        <div className="register-brand-content">
+
+          <div className="register-logo-wrap">
+            <img
+              src="/src/assets/phoenix-logo.png"
+              alt="PHOENIX"
+              className="register-logo"
+            />
+          </div>
+
+          <p className="register-eyebrow">
+            JOIN PHOENIX
+          </p>
+
+          <h1>
+            Build better.
+            <span> Work smarter.</span>
+          </h1>
+
+          <p className="register-brand-description">
+            Create your PHOENIX account and get
+            access to a connected workspace for
+            projects, requests and team collaboration.
+          </p>
+
+          <div className="register-steps">
+
+            <div className="register-step">
+
+              <div className="register-step-number">
+                01
+              </div>
+
+              <div>
+                <strong>
+                  Create your account
+                </strong>
+
+                <span>
+                  Set up your basic profile.
+                </span>
+              </div>
+
+            </div>
+
+            <div className="register-step">
+
+              <div className="register-step-number">
+                02
+              </div>
+
+              <div>
+                <strong>
+                  Submit your requests
+                </strong>
+
+                <span>
+                  Tell your team what you need.
+                </span>
+              </div>
+
+            </div>
+
+            <div className="register-step">
+
+              <div className="register-step-number">
+                03
+              </div>
+
+              <div>
+                <strong>
+                  Track your work
+                </strong>
+
+                <span>
+                  Follow projects from start to finish.
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
 
-        <h1>PHOENIX</h1>
+        <div className="register-brand-footer">
+          © {new Date().getFullYear()} PHOENIX
+        </div>
 
-        <p className="register-subtitle">
-          Create your company workspace account
-        </p>
+      </section>
 
-        <form
-          className="register-form"
-          onSubmit={handleRegister}
-        >
+      {/* =====================================================
+          REGISTER FORM
+      ===================================================== */}
 
-          <div className="register-input-group">
-            <label>Full Name</label>
+      <section className="register-form-section">
 
-            <input
-              type="text"
-              name="name"
-              placeholder="Enter your full name"
-              value={form.name}
-              onChange={handleChange}
-              required
-            />
-          </div>
+        <div className="register-mobile-logo">
 
-          <div className="register-input-group">
-            <label>Phone</label>
+          <img
+            src="/src/assets/phoenix-logo.png"
+            alt="PHOENIX"
+          />
 
-            <input
-              type="tel"
-              name="phone"
-              placeholder="Enter your phone number"
-              value={form.phone}
-              onChange={handleChange}
-            />
-          </div>
+          <span>
+            PHOENIX
+          </span>
 
-          <div className="register-input-group">
-            <label>Email</label>
+        </div>
 
-            <input
-              type="email"
-              name="email"
-              placeholder="Enter your email"
-              value={form.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
+        <div className="register-card">
 
-          <div className="register-input-group">
-            <label>Password</label>
+          <div className="register-card-header">
 
-            <input
-              type="password"
-              name="password"
-              placeholder="Minimum 6 characters"
-              value={form.password}
-              onChange={handleChange}
-              minLength={6}
-              required
-            />
-          </div>
+            <div className="register-welcome-icon">
+              ✨
+            </div>
 
-          <div className="register-input-group">
-            <label>Confirm Password</label>
+            <div>
+              <h2>
+                Create your account
+              </h2>
 
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Re-enter your password"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              minLength={6}
-              required
-            />
+              <p>
+                Join your PHOENIX workspace.
+              </p>
+            </div>
+
           </div>
 
           {error && (
-            <div className="register-error">
-              {error}
+            <div className="register-message register-error">
+              <span>!</span>
+              <p>{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="register-success">
-              {success}
+            <div className="register-message register-success">
+              <span>✓</span>
+              <p>{success}</p>
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
+          <form
+            className="register-form"
+            onSubmit={handleRegister}
           >
-            {loading
-              ? "Creating Account..."
-              : "Create Account"}
-          </button>
 
-        </form>
+            {/* NAME */}
 
-        <div className="register-login">
-          Already have an account?
+            <div className="register-field">
 
-          <Link to="/">
-            Sign In
+              <label htmlFor="name">
+                Full name *
+              </label>
+
+              <input
+                id="name"
+                name="name"
+                type="text"
+                placeholder="Enter your full name"
+                value={form.name}
+                onChange={handleChange}
+                autoComplete="name"
+                disabled={loading}
+                required
+              />
+
+            </div>
+
+            {/* EMAIL */}
+
+            <div className="register-field">
+
+              <label htmlFor="email">
+                Email address *
+              </label>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@company.com"
+                value={form.email}
+                onChange={handleChange}
+                autoComplete="email"
+                disabled={loading}
+                required
+              />
+
+            </div>
+
+            {/* PHONE */}
+
+            <div className="register-field">
+
+              <label htmlFor="phone">
+                Phone number
+              </label>
+
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                placeholder="Enter your phone number"
+                value={form.phone}
+                onChange={handleChange}
+                autoComplete="tel"
+                disabled={loading}
+              />
+
+            </div>
+
+            {/* PASSWORD ROW */}
+
+            <div className="register-password-grid">
+
+              <div className="register-field">
+
+                <label htmlFor="password">
+                  Password *
+                </label>
+
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Minimum 6 characters"
+                  value={form.password}
+                  onChange={handleChange}
+                  autoComplete="new-password"
+                  disabled={loading}
+                  required
+                />
+
+              </div>
+
+              <div className="register-field">
+
+                <label htmlFor="confirmPassword">
+                  Confirm password *
+                </label>
+
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Repeat password"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  autoComplete="new-password"
+                  disabled={loading}
+                  required
+                />
+
+              </div>
+
+            </div>
+
+            {/* SUBMIT */}
+
+            <button
+              type="submit"
+              className="register-submit"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="register-spinner" />
+                  Creating account...
+                </>
+              ) : (
+                <>
+                  Create account
+                  <span>→</span>
+                </>
+              )}
+            </button>
+
+          </form>
+
+          <div className="register-divider">
+            <span>Already have an account?</span>
+          </div>
+
+          <Link
+            to="/"
+            className="register-login-button"
+          >
+            Back to sign in
           </Link>
+
+          <p className="register-security">
+            🔒 Your information is protected with secure
+            authentication.
+          </p>
+
         </div>
 
-        <p className="register-footer">
-          Secure access powered by PHOENIX
-        </p>
+      </section>
 
-      </div>
-    </div>
+    </main>
   );
 }
 

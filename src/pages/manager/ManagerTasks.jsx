@@ -1,43 +1,83 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import "./ManagerTasks.css";
+import DashboardLayout from "../../components/DashboardLayout";
+import "./ManagerProjects.css";
 
-function ManagerTasks() {
+function ManagerProjects() {
   const navigate = useNavigate();
 
-  const [tasks, setTasks] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [projects, setProjects] = useState([]);
   const [services, setServices] = useState([]);
-  const [users, setUsers] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
+  const [permissions, setPermissions] = useState([]);
   const [canCreate, setCanCreate] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
-  const [canAssign, setCanAssign] = useState(false);
 
-  const [showForm, setShowForm] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    project_id: "",
+    name: "",
     service_id: "",
-    user_id: "",
-    priority: "medium",
-    status: "pending",
+    start_date: "",
     due_date: "",
+    priority: "medium",
+    status: "not_started",
+    description: "",
   });
 
-  /* =====================================================
-     LOAD DATA
-  ===================================================== */
+  const hasPermission = (permissionName) =>
+    permissions.includes(permissionName);
 
-  const loadTasks = async () => {
+  const navigation = [
+    {
+      section: "MAIN MENU",
+      items: [
+        { label: "Dashboard", path: "/manager", icon: "⌂" },
+        ...(hasPermission("view_requests")
+          ? [{ label: "Requests", path: "/manager/requests", icon: "▣" }]
+          : []),
+        ...(hasPermission("view_users")
+          ? [{ label: "Users", path: "/manager/users", icon: "◉" }]
+          : []),
+        ...(hasPermission("view_projects")
+          ? [{ label: "Projects", path: "/manager/projects", icon: "◆" }]
+          : []),
+      ],
+    },
+    {
+      section: "WORK",
+      items: [
+        ...(hasPermission("view_tasks")
+          ? [{ label: "Tasks", path: "/manager/tasks", icon: "✓" }]
+          : []),
+        ...(hasPermission("upload_files")
+          ? [{ label: "Files", path: "/manager/files", icon: "▤" }]
+          : []),
+        ...(hasPermission("review_work")
+          ? [{ label: "Review Work", path: "/manager/review", icon: "◈" }]
+          : []),
+        ...(hasPermission("view_reports")
+          ? [{ label: "Reports", path: "/manager/reports", icon: "▥" }]
+          : []),
+      ],
+    },
+  ];
+
+  useEffect(() => {
+    initialize();
+  }, []);
+
+  async function initialize() {
     setLoading(true);
+    setError("");
 
     try {
       const {
@@ -45,213 +85,139 @@ function ManagerTasks() {
       } = await supabase.auth.getUser();
 
       if (!user) {
+        navigate("/login");
+        return;
+      }
+
+      const { data: managerProfile, error: profileError } =
+        await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+      if (profileError) throw profileError;
+
+      if (
+        managerProfile.role !== "manager" ||
+        managerProfile.status !== "active"
+      ) {
         navigate("/");
         return;
       }
 
-      /* =================================================
-         LOAD PERMISSIONS
-      ================================================= */
+      setProfile(managerProfile);
 
-      const {
-        data: permissionData,
-        error: permissionError,
-      } = await supabase
-        .from("manager_permissions")
-        .select(`
-          permissions:permission_id (
-            name
-          )
-        `)
-        .eq("manager_id", user.id);
+      const { data: permissionRows, error: permissionError } =
+        await supabase
+          .from("manager_permissions")
+          .select(`
+            permissions (
+              name
+            )
+          `)
+          .eq("manager_id", user.id);
 
-      if (permissionError) {
-        throw permissionError;
-      }
+      if (permissionError) throw permissionError;
 
-      const permissions =
-        permissionData
-          ?.map((item) => item.permissions?.name)
-          .filter(Boolean) || [];
+      const permissionNames =
+        permissionRows?.map((row) => row.permissions?.name).filter(Boolean) ||
+        [];
 
-      if (!permissions.includes("view_tasks")) {
-        alert(
-          "You do not have permission to view tasks."
-        );
+      setPermissions(permissionNames);
 
+      if (!permissionNames.includes("view_projects")) {
         navigate("/manager");
         return;
       }
 
-      setCanCreate(
-        permissions.includes("create_tasks")
-      );
+      setCanCreate(permissionNames.includes("create_projects"));
+      setCanEdit(permissionNames.includes("edit_projects"));
+      setCanDelete(permissionNames.includes("delete_projects"));
 
-      setCanEdit(
-        permissions.includes("edit_tasks")
-      );
-
-      setCanDelete(
-        permissions.includes("delete_tasks")
-      );
-
-      setCanAssign(
-        permissions.includes("assign_tasks")
-      );
-
-      /* =================================================
-         LOAD TASKS
-      ================================================= */
-
-      const {
-        data: taskData,
-        error: taskError,
-      } = await supabase
-        .from("tasks")
-        .select(`
-          id,
-          title,
-          description,
-          project_id,
-          service_id,
-          manager_id,
-          user_id,
-          priority,
-          status,
-          due_date,
-          created_at,
-
-          projects:project_id (
-            name
-          ),
-
-          services:service_id (
-            name
-          ),
-
-          users:user_id (
-            name,
-            email
-          )
-        `)
-        .eq("manager_id", user.id)
-        .order("created_at", {
-          ascending: false,
-        });
-
-      if (taskError) {
-        throw taskError;
-      }
-
-      /* =================================================
-         LOAD MANAGER PROJECTS
-      ================================================= */
-
-      const {
-        data: projectData,
-        error: projectError,
-      } = await supabase
-        .from("projects")
-        .select(`
-          id,
-          name
-        `)
-        .eq("manager_id", user.id)
-        .order("name");
-
-      if (projectError) {
-        throw projectError;
-      }
-
-      /* =================================================
-         LOAD SERVICES
-      ================================================= */
-
-      const {
-        data: serviceData,
-        error: serviceError,
-      } = await supabase
-        .from("services")
-        .select("id, name")
-        .eq("status", "active")
-        .order("name");
-
-      if (serviceError) {
-        throw serviceError;
-      }
-
-      /* =================================================
-         LOAD USERS
-      ================================================= */
-
-      const {
-        data: userData,
-        error: userError,
-      } = await supabase
-        .from("profiles")
-        .select("id, name, email")
-        .eq("role", "user")
-        .eq("status", "active")
-        .order("name");
-
-      if (userError) {
-        throw userError;
-      }
-
-      setTasks(taskData || []);
-      setProjects(projectData || []);
-      setServices(serviceData || []);
-      setUsers(userData || []);
-    } catch (error) {
-      console.error(
-        "Manager tasks error:",
-        error
-      );
-
-      alert(error.message);
+      await Promise.all([loadServices(), loadProjects(user.id)]);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Unable to load projects.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  useEffect(() => {
-    loadTasks();
-  }, []);
+  async function loadServices() {
+    const { data, error } = await supabase
+      .from("services")
+      .select("*")
+      .eq("status", "active")
+      .order("name");
 
-  /* =====================================================
-     FORM CHANGE
-  ===================================================== */
+    if (error) throw error;
 
-  const handleChange = (e) => {
+    setServices(data || []);
+  }
+
+  async function loadProjects(managerId) {
+    const id = managerId || profile?.id;
+
+    if (!id) return;
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select(`
+        *,
+        services (
+          id,
+          name
+        )
+      `)
+      .eq("manager_id", id)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    setProjects(data || []);
+  }
+
+  function handleChange(e) {
     const { name, value } = e.target;
 
     setForm((previous) => ({
       ...previous,
       [name]: value,
     }));
-  };
+  }
 
-  /* =====================================================
-     CREATE TASK
-  ===================================================== */
+  function resetForm() {
+    setForm({
+      name: "",
+      service_id: "",
+      start_date: "",
+      due_date: "",
+      priority: "medium",
+      status: "not_started",
+      description: "",
+    });
+  }
 
-  const handleCreateTask = async (e) => {
+  async function createProject(e) {
     e.preventDefault();
 
-    if (!canCreate) {
-      alert(
-        "You do not have permission to create tasks."
-      );
+    if (!canCreate) return;
+
+    setError("");
+    setSuccess("");
+
+    if (!form.name.trim()) {
+      setError("Project name is required.");
       return;
     }
 
-    if (!form.title.trim()) {
-      alert("Task title is required.");
-      return;
-    }
-
-    if (!form.project_id) {
-      alert("Please select a project.");
+    if (
+      form.start_date &&
+      form.due_date &&
+      form.due_date < form.start_date
+    ) {
+      setError("Due date cannot be before the start date.");
       return;
     }
 
@@ -263,966 +229,535 @@ function ManagerTasks() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        navigate("/");
+        navigate("/login");
         return;
       }
 
-      const { error } = await supabase
-        .from("tasks")
+      const { data, error: insertError } = await supabase
+        .from("projects")
         .insert({
-          title: form.title.trim(),
-
-          description:
-            form.description.trim() || null,
-
-          project_id:
-            form.project_id,
-
-          service_id:
-            form.service_id || null,
-
+          name: form.name.trim(),
+          description: form.description.trim() || null,
+          service_id: form.service_id || null,
           manager_id: user.id,
+          start_date: form.start_date || null,
+          due_date: form.due_date || null,
+          priority: form.priority,
+          status: form.status,
+          created_by: user.id,
+        })
+        .select(`
+          *,
+          services (
+            id,
+            name
+          )
+        `)
+        .single();
 
-          user_id:
-            canAssign && form.user_id
-              ? form.user_id
-              : null,
+      if (insertError) throw insertError;
 
-          priority:
-            form.priority,
-
-          status:
-            form.status,
-
-          due_date:
-            form.due_date || null,
-
-          created_by:
-            user.id,
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      alert(
-        "Task created successfully."
-      );
-
-      setForm({
-        title: "",
-        description: "",
-        project_id: "",
-        service_id: "",
-        user_id: "",
-        priority: "medium",
-        status: "pending",
-        due_date: "",
+      await supabase.from("activity_logs").insert({
+        user_id: user.id,
+        action: "project_created",
+        description: `Created project "${form.name.trim()}"`,
       });
 
-      setShowForm(false);
+      setProjects((previous) => [data, ...previous]);
 
-      await loadTasks();
-    } catch (error) {
-      console.error(
-        "Create task error:",
-        error
-      );
+      resetForm();
+      setShowCreate(false);
+      setSuccess("Project created successfully.");
 
-      alert(error.message);
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Unable to create project.");
     } finally {
       setSaving(false);
     }
-  };
+  }
 
-  /* =====================================================
-     UPDATE TASK STATUS
-  ===================================================== */
+  async function updateStatus(projectId, status) {
+    if (!canEdit) return;
 
-  const updateTaskStatus = async (
-    taskId,
-    status
-  ) => {
-    if (!canEdit) {
-      alert(
-        "You do not have permission to edit tasks."
-      );
-      return;
-    }
+    setError("");
+    setSuccess("");
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        navigate("/");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("tasks")
+      const { error: updateError } = await supabase
+        .from("projects")
         .update({
           status,
-          updated_at:
-            new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
-        .eq("id", taskId)
-        .eq("manager_id", user.id);
+        .eq("id", projectId);
 
-      if (error) {
-        throw error;
+      if (updateError) throw updateError;
+
+      const currentProject = projects.find(
+        (project) => project.id === projectId
+      );
+
+      if (profile?.id) {
+        await supabase.from("activity_logs").insert({
+          user_id: profile.id,
+          action: "project_status_updated",
+          description: `Updated project "${currentProject?.name || "Project"}" to ${formatStatus(
+            status
+          )}`,
+        });
       }
 
-      await loadTasks();
-    } catch (error) {
-      console.error(
-        "Task update error:",
-        error
+      setProjects((previous) =>
+        previous.map((project) =>
+          project.id === projectId
+            ? { ...project, status }
+            : project
+        )
       );
 
-      alert(error.message);
+      setSuccess("Project status updated.");
+
+      setTimeout(() => setSuccess(""), 2500);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Unable to update project.");
     }
-  };
+  }
 
-  /* =====================================================
-     UPDATE TASK ASSIGNMENT
-  ===================================================== */
+  async function deleteProject(projectId) {
+    if (!canDelete) return;
 
-  const updateTaskUser = async (
-    taskId,
-    userId
-  ) => {
-    if (!canAssign) {
-      alert(
-        "You do not have permission to assign tasks."
-      );
-      return;
-    }
-
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        navigate("/");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("tasks")
-        .update({
-          user_id: userId || null,
-          updated_at:
-            new Date().toISOString(),
-        })
-        .eq("id", taskId)
-        .eq("manager_id", user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      await loadTasks();
-    } catch (error) {
-      console.error(
-        "Task assignment error:",
-        error
-      );
-
-      alert(error.message);
-    }
-  };
-
-  /* =====================================================
-     DELETE TASK
-  ===================================================== */
-
-  const deleteTask = async (taskId) => {
-    if (!canDelete) {
-      alert(
-        "You do not have permission to delete tasks."
-      );
-      return;
-    }
+    const project = projects.find((item) => item.id === projectId);
 
     const confirmed = window.confirm(
-      "Are you sure you want to delete this task?"
+      `Delete "${project?.name || "this project"}"? This action cannot be undone.`
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
+
+    setError("");
+    setSuccess("");
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        navigate("/");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("tasks")
+      const { error: deleteError } = await supabase
+        .from("projects")
         .delete()
-        .eq("id", taskId)
-        .eq("manager_id", user.id);
+        .eq("id", projectId);
 
-      if (error) {
-        throw error;
+      if (deleteError) throw deleteError;
+
+      if (profile?.id) {
+        await supabase.from("activity_logs").insert({
+          user_id: profile.id,
+          action: "project_deleted",
+          description: `Deleted project "${project?.name || "Project"}"`,
+        });
       }
 
-      alert(
-        "Task deleted successfully."
+      setProjects((previous) =>
+        previous.filter((item) => item.id !== projectId)
       );
 
-      await loadTasks();
-    } catch (error) {
-      console.error(
-        "Task delete error:",
-        error
-      );
+      setSuccess("Project deleted.");
 
-      alert(error.message);
+      setTimeout(() => setSuccess(""), 2500);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Unable to delete project.");
     }
-  };
+  }
 
-  /* =====================================================
-     STATUS LABEL
-  ===================================================== */
+  function formatDate(date) {
+    if (!date) return "Not set";
 
-  const getLabel = (value) => {
-    if (!value) {
-      return "";
-    }
+    return new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
 
-    return value
-      .replaceAll("_", " ")
-      .replace(/\b\w/g, (letter) =>
-        letter.toUpperCase()
-      );
-  };
+  function formatStatus(status) {
+    const labels = {
+      not_started: "Not Started",
+      in_progress: "In Progress",
+      review: "Review",
+      completed: "Completed",
+      on_hold: "On Hold",
+    };
 
-  /* =====================================================
-     COUNTS
-  ===================================================== */
+    return labels[status] || status;
+  }
 
-  const totalTasks = tasks.length;
+  function formatPriority(priority) {
+    return priority
+      ? priority.charAt(0).toUpperCase() + priority.slice(1)
+      : "Medium";
+  }
 
-  const pendingTasks = tasks.filter(
-    (task) =>
-      task.status === "pending"
+  const totalProjects = projects.length;
+  const activeProjects = projects.filter(
+    (project) => project.status === "in_progress"
+  ).length;
+  const reviewProjects = projects.filter(
+    (project) => project.status === "review"
+  ).length;
+  const completedProjects = projects.filter(
+    (project) => project.status === "completed"
   ).length;
 
-  const activeTasks = tasks.filter(
-    (task) =>
-      task.status === "in_progress"
-  ).length;
-
-  const completedTasks = tasks.filter(
-    (task) =>
-      task.status === "completed"
-  ).length;
-
-  /* =====================================================
-     UI
-  ===================================================== */
+  if (loading) {
+    return (
+      <div className="manager-projects-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading your projects...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="manager-tasks-page">
-
-      {/* =================================================
-          HEADER
-      ================================================= */}
-
-      <header className="manager-tasks-header">
-
-        <div>
-
-          <span>
-            PHOENIX MANAGER
-          </span>
-
-          <h1>
-            My Tasks
-          </h1>
-
-          <p>
-            Manage tasks assigned to
-            your projects.
-          </p>
-
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            alignItems: "center",
-          }}
-        >
-
-          {canCreate && (
-            <button
-              className="create-task-button"
-              onClick={() =>
-                setShowForm(!showForm)
-              }
-            >
-              {showForm
-                ? "Close"
-                : "+ Create Task"}
-            </button>
-          )}
-
-          <button
-            className="back-manager-button"
-            onClick={() =>
-              navigate("/manager")
-            }
-          >
-            ← Dashboard
-          </button>
-
-        </div>
-
-      </header>
-
-      {/* =================================================
-          SUMMARY
-      ================================================= */}
-
-      <section className="manager-task-summary">
-
-        <div className="manager-task-summary-card">
-
-          <span>
-            Total Tasks
-          </span>
-
-          <strong>
-            {totalTasks}
-          </strong>
-
-        </div>
-
-        <div className="manager-task-summary-card">
-
-          <span>
-            Pending
-          </span>
-
-          <strong>
-            {pendingTasks}
-          </strong>
-
-        </div>
-
-        <div className="manager-task-summary-card">
-
-          <span>
-            In Progress
-          </span>
-
-          <strong>
-            {activeTasks}
-          </strong>
-
-        </div>
-
-        <div className="manager-task-summary-card">
-
-          <span>
-            Completed
-          </span>
-
-          <strong>
-            {completedTasks}
-          </strong>
-
-        </div>
-
-      </section>
-
-      {/* =================================================
-          CREATE TASK FORM
-      ================================================= */}
-
-      {showForm && canCreate && (
-
-        <div className="manager-task-form-card">
-
+    <DashboardLayout
+      profile={profile}
+      navigation={navigation}
+      title="Projects"
+    >
+      <div className="manager-projects-page">
+        <div className="projects-header">
           <div>
-            <h2>
-              Create New Task
-            </h2>
-
-            <p>
-              Create a task for one of
-              your projects.
-            </p>
+            <span className="page-eyebrow">WORKSPACE</span>
+            <h1>Projects</h1>
+            <p>Manage and track the projects assigned to you.</p>
           </div>
 
-          <form
-            onSubmit={handleCreateTask}
-          >
+          <div className="header-actions">
+            <button
+              className="refresh-button"
+              onClick={() => loadProjects(profile?.id)}
+              title="Refresh projects"
+            >
+              ↻
+            </button>
 
-            <div className="manager-task-form-grid">
+            {canCreate && (
+              <button
+                className="create-project-button"
+                onClick={() => {
+                  setShowCreate((previous) => !previous);
+                  setError("");
+                }}
+              >
+                <span>+</span>
+                Create Project
+              </button>
+            )}
+          </div>
+        </div>
 
-              {/* TITLE */}
+        {error && (
+          <div className="project-alert error">
+            <span>!</span>
+            {error}
+          </div>
+        )}
 
-              <div className="manager-task-field full-width">
+        {success && (
+          <div className="project-alert success">
+            <span>✓</span>
+            {success}
+          </div>
+        )}
 
-                <label>
-                  Task Title
-                </label>
+        <div className="project-stats">
+          <div className="project-stat-card">
+            <div className="stat-icon purple">◆</div>
+            <div>
+              <span>Total Projects</span>
+              <strong>{totalProjects}</strong>
+            </div>
+          </div>
 
-                <input
-                  type="text"
-                  name="title"
-                  value={form.title}
-                  onChange={handleChange}
-                  placeholder="Enter task title"
-                  required
-                />
+          <div className="project-stat-card">
+            <div className="stat-icon blue">◉</div>
+            <div>
+              <span>In Progress</span>
+              <strong>{activeProjects}</strong>
+            </div>
+          </div>
 
+          <div className="project-stat-card">
+            <div className="stat-icon orange">◈</div>
+            <div>
+              <span>In Review</span>
+              <strong>{reviewProjects}</strong>
+            </div>
+          </div>
+
+          <div className="project-stat-card">
+            <div className="stat-icon green">✓</div>
+            <div>
+              <span>Completed</span>
+              <strong>{completedProjects}</strong>
+            </div>
+          </div>
+        </div>
+
+        {showCreate && canCreate && (
+          <section className="create-project-panel">
+            <div className="panel-heading">
+              <div>
+                <span className="panel-label">NEW PROJECT</span>
+                <h2>Create a project</h2>
+                <p>Add a new project to your workspace.</p>
               </div>
 
-              {/* PROJECT */}
+              <button
+                className="close-form-button"
+                onClick={() => {
+                  setShowCreate(false);
+                  resetForm();
+                }}
+              >
+                ×
+              </button>
+            </div>
 
-              <div className="manager-task-field">
+            <form onSubmit={createProject}>
+              <div className="form-grid">
+                <div className="form-field full-width">
+                  <label>Project Name *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="e.g. Phoenix Website Redesign"
+                    required
+                  />
+                </div>
 
-                <label>
-                  Project
-                </label>
-
-                <select
-                  name="project_id"
-                  value={form.project_id}
-                  onChange={handleChange}
-                  required
-                >
-
-                  <option value="">
-                    Select project
-                  </option>
-
-                  {projects.map(
-                    (project) => (
-
-                      <option
-                        key={project.id}
-                        value={project.id}
-                      >
-                        {project.name}
-                      </option>
-
-                    )
-                  )}
-
-                </select>
-
-              </div>
-
-              {/* SERVICE */}
-
-              <div className="manager-task-field">
-
-                <label>
-                  Service
-                </label>
-
-                <select
-                  name="service_id"
-                  value={form.service_id}
-                  onChange={handleChange}
-                >
-
-                  <option value="">
-                    Select service
-                  </option>
-
-                  {services.map(
-                    (service) => (
-
-                      <option
-                        key={service.id}
-                        value={service.id}
-                      >
-                        {service.name}
-                      </option>
-
-                    )
-                  )}
-
-                </select>
-
-              </div>
-
-              {/* ASSIGNED USER */}
-
-              {canAssign && (
-
-                <div className="manager-task-field">
-
-                  <label>
-                    Assign User
-                  </label>
-
+                <div className="form-field">
+                  <label>Service</label>
                   <select
-                    name="user_id"
-                    value={form.user_id}
+                    name="service_id"
+                    value={form.service_id}
                     onChange={handleChange}
                   >
-
-                    <option value="">
-                      Not assigned
-                    </option>
-
-                    {users.map(
-                      (item) => (
-
-                        <option
-                          key={item.id}
-                          value={item.id}
-                        >
-                          {item.name} — {item.email}
-                        </option>
-
-                      )
-                    )}
-
+                    <option value="">Select service</option>
+                    {services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name}
+                      </option>
+                    ))}
                   </select>
-
                 </div>
 
-              )}
+                <div className="form-field">
+                  <label>Priority</label>
+                  <select
+                    name="priority"
+                    value={form.priority}
+                    onChange={handleChange}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
 
-              {/* PRIORITY */}
+                <div className="form-field">
+                  <label>Start Date</label>
+                  <input
+                    type="date"
+                    name="start_date"
+                    value={form.start_date}
+                    onChange={handleChange}
+                  />
+                </div>
 
-              <div className="manager-task-field">
+                <div className="form-field">
+                  <label>Due Date</label>
+                  <input
+                    type="date"
+                    name="due_date"
+                    value={form.due_date}
+                    onChange={handleChange}
+                  />
+                </div>
 
-                <label>
-                  Priority
-                </label>
+                <div className="form-field">
+                  <label>Status</label>
+                  <select
+                    name="status"
+                    value={form.status}
+                    onChange={handleChange}
+                  >
+                    <option value="not_started">Not Started</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="review">Review</option>
+                    <option value="on_hold">On Hold</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
 
-                <select
-                  name="priority"
-                  value={form.priority}
-                  onChange={handleChange}
+                <div className="form-field full-width">
+                  <label>Description</label>
+                  <textarea
+                    name="description"
+                    value={form.description}
+                    onChange={handleChange}
+                    placeholder="Describe the project requirements..."
+                    rows="4"
+                  />
+                </div>
+              </div>
+
+              <div className="form-footer">
+                <button
+                  type="button"
+                  className="cancel-button"
+                  onClick={() => {
+                    setShowCreate(false);
+                    resetForm();
+                  }}
                 >
+                  Cancel
+                </button>
 
-                  <option value="low">
-                    Low
-                  </option>
-
-                  <option value="medium">
-                    Medium
-                  </option>
-
-                  <option value="high">
-                    High
-                  </option>
-
-                  <option value="urgent">
-                    Urgent
-                  </option>
-
-                </select>
-
-              </div>
-
-              {/* STATUS */}
-
-              <div className="manager-task-field">
-
-                <label>
-                  Status
-                </label>
-
-                <select
-                  name="status"
-                  value={form.status}
-                  onChange={handleChange}
+                <button
+                  type="submit"
+                  className="submit-project-button"
+                  disabled={saving}
                 >
-
-                  <option value="pending">
-                    Pending
-                  </option>
-
-                  <option value="in_progress">
-                    In Progress
-                  </option>
-
-                  <option value="review">
-                    Review
-                  </option>
-
-                  <option value="completed">
-                    Completed
-                  </option>
-
-                </select>
-
+                  {saving ? "Creating..." : "Create Project"}
+                </button>
               </div>
+            </form>
+          </section>
+        )}
 
-              {/* DUE DATE */}
-
-              <div className="manager-task-field">
-
-                <label>
-                  Due Date
-                </label>
-
-                <input
-                  type="date"
-                  name="due_date"
-                  value={form.due_date}
-                  onChange={handleChange}
-                />
-
-              </div>
-
-              {/* DESCRIPTION */}
-
-              <div className="manager-task-field full-width">
-
-                <label>
-                  Description
-                </label>
-
-                <textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  placeholder="Describe the task..."
-                  rows="4"
-                />
-
-              </div>
-
+        <section className="projects-section">
+          <div className="section-title-row">
+            <div>
+              <h2>Your Projects</h2>
+              <p>{projects.length} project(s) assigned to you</p>
             </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "12px",
-                marginTop: "20px",
-              }}
-            >
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowForm(false)
-                }
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                disabled={saving}
-              >
-                {saving
-                  ? "Creating..."
-                  : "Create Task"}
-              </button>
-
-            </div>
-
-          </form>
-
-        </div>
-
-      )}
-
-      {/* =================================================
-          TASK LIST
-      ================================================= */}
-
-      {loading ? (
-
-        <div className="manager-tasks-empty">
-          Loading tasks...
-        </div>
-
-      ) : tasks.length === 0 ? (
-
-        <div className="manager-tasks-empty">
-
-          <div className="manager-task-empty-icon">
-            ✓
           </div>
 
-          <h2>
-            No Tasks Yet
-          </h2>
+          {projects.length === 0 ? (
+            <div className="empty-projects">
+              <div className="empty-icon">◆</div>
+              <h3>No projects yet</h3>
+              <p>
+                Projects assigned to you will appear here.
+              </p>
 
-          <p>
-            You currently don't have
-            any tasks for your projects.
-          </p>
-
-          {canCreate && (
-            <button
-              onClick={() =>
-                setShowForm(true)
-              }
-            >
-              + Create Task
-            </button>
-          )}
-
-        </div>
-
-      ) : (
-
-        <section className="manager-task-list">
-
-          {tasks.map((task) => (
-
-            <div
-              className="manager-task-card"
-              key={task.id}
-            >
-
-              {/* TASK HEADER */}
-
-              <div className="manager-task-top">
-
-                <div>
-
-                  <div className="manager-task-title-row">
-
-                    <h2>
-                      {task.title}
-                    </h2>
+              {canCreate && (
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="empty-create-button"
+                >
+                  + Create your first project
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="projects-grid">
+              {projects.map((project) => (
+                <article className="project-card" key={project.id}>
+                  <div className="project-card-top">
+                    <div className="project-service">
+                      {project.services?.name || "General Project"}
+                    </div>
 
                     <span
-                      className={`task-priority priority-${task.priority}`}
+                      className={`priority-badge ${project.priority}`}
                     >
-                      {task.priority}
+                      {formatPriority(project.priority)}
                     </span>
-
                   </div>
 
-                  <p className="manager-task-project">
+                  <div className="project-card-content">
+                    <h3>{project.name}</h3>
 
-                    Project:{" "}
+                    <p className="project-description">
+                      {project.description ||
+                        "No project description provided."}
+                    </p>
 
-                    <strong>
-                      {task.projects?.name ||
-                        "No project"}
-                    </strong>
+                    <div className="project-dates">
+                      <div>
+                        <span>START DATE</span>
+                        <strong>{formatDate(project.start_date)}</strong>
+                      </div>
 
-                  </p>
+                      <div>
+                        <span>DUE DATE</span>
+                        <strong>{formatDate(project.due_date)}</strong>
+                      </div>
+                    </div>
 
-                </div>
+                    <div className="project-card-footer">
+                      <div className="status-control">
+                        <span>STATUS</span>
 
-                <span
-                  className={`task-status status-${task.status}`}
-                >
-                  {getLabel(task.status)}
-                </span>
+                        {canEdit ? (
+                          <select
+                            value={project.status}
+                            onChange={(e) =>
+                              updateStatus(
+                                project.id,
+                                e.target.value
+                              )
+                            }
+                            className={`status-select ${project.status}`}
+                          >
+                            <option value="not_started">
+                              Not Started
+                            </option>
+                            <option value="in_progress">
+                              In Progress
+                            </option>
+                            <option value="review">
+                              Review
+                            </option>
+                            <option value="on_hold">
+                              On Hold
+                            </option>
+                            <option value="completed">
+                              Completed
+                            </option>
+                          </select>
+                        ) : (
+                          <strong className="status-text">
+                            {formatStatus(project.status)}
+                          </strong>
+                        )}
+                      </div>
 
-              </div>
-
-              {/* DESCRIPTION */}
-
-              {task.description && (
-
-                <div className="manager-task-description">
-
-                  <span>
-                    Description
-                  </span>
-
-                  <p>
-                    {task.description}
-                  </p>
-
-                </div>
-
-              )}
-
-              {/* DETAILS */}
-
-              <div className="manager-task-details">
-
-                <div>
-
-                  <span>
-                    Service
-                  </span>
-
-                  <strong>
-                    {task.services?.name ||
-                      "Not selected"}
-                  </strong>
-
-                </div>
-
-                <div>
-
-                  <span>
-                    Assigned User
-                  </span>
-
-                  <strong>
-                    {task.users?.name ||
-                      "Not assigned"}
-                  </strong>
-
-                </div>
-
-                <div>
-
-                  <span>
-                    Due Date
-                  </span>
-
-                  <strong>
-                    {task.due_date
-                      ? new Date(
-                          task.due_date
-                        ).toLocaleDateString()
-                      : "Not specified"}
-                  </strong>
-
-                </div>
-
-              </div>
-
-              {/* EDIT CONTROLS */}
-
-              {canEdit && (
-
-                <div className="manager-task-controls">
-
-                  <label>
-                    Update Task Status
-                  </label>
-
-                  <select
-                    value={task.status}
-                    onChange={(e) =>
-                      updateTaskStatus(
-                        task.id,
-                        e.target.value
-                      )
-                    }
-                  >
-
-                    <option value="pending">
-                      Pending
-                    </option>
-
-                    <option value="in_progress">
-                      In Progress
-                    </option>
-
-                    <option value="review">
-                      Review
-                    </option>
-
-                    <option value="completed">
-                      Completed
-                    </option>
-
-                  </select>
-
-                </div>
-
-              )}
-
-              {/* ASSIGN USER */}
-
-              {canAssign && (
-
-                <div
-                  className="manager-task-controls"
-                  style={{
-                    marginTop: "12px",
-                  }}
-                >
-
-                  <label>
-                    Assign User
-                  </label>
-
-                  <select
-                    value={task.user_id || ""}
-                    onChange={(e) =>
-                      updateTaskUser(
-                        task.id,
-                        e.target.value
-                      )
-                    }
-                  >
-
-                    <option value="">
-                      Not assigned
-                    </option>
-
-                    {users.map(
-                      (item) => (
-
-                        <option
-                          key={item.id}
-                          value={item.id}
+                      {canDelete && (
+                        <button
+                          className="delete-project-button"
+                          onClick={() =>
+                            deleteProject(project.id)
+                          }
+                          title="Delete project"
                         >
-                          {item.name}
-                        </option>
-
-                      )
-                    )}
-
-                  </select>
-
-                </div>
-
-              )}
-
-              {/* DELETE */}
-
-              {canDelete && (
-
-                <div
-                  style={{
-                    marginTop: "16px",
-                    display: "flex",
-                    justifyContent: "flex-end",
-                  }}
-                >
-
-                  <button
-                    className="manager-task-delete"
-                    onClick={() =>
-                      deleteTask(task.id)
-                    }
-                  >
-                    Delete Task
-                  </button>
-
-                </div>
-
-              )}
-
+                          🗑
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
-
-          ))}
-
+          )}
         </section>
-
-      )}
-
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 
-export default ManagerTasks;
+export default ManagerProjects;

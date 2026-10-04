@@ -1,501 +1,486 @@
-.manager-dashboard {
-  min-height: 100vh;
-  display: flex;
-  background: #f5f7fb;
-  color: #172033;
+.manager-dashboard-page {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
 }
 
-/* ================= SIDEBAR ================= */
+/* =========================
+   LOADING
+========================= */
 
-.manager-sidebar {
-  width: 260px;
+.manager-dashboard-loading {
   min-height: 100vh;
-  background: #15182b;
-  color: white;
   display: flex;
   flex-direction: column;
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 100;
-}
-
-.manager-brand {
-  height: 86px;
-  display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 22px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  justify-content: center;
+  gap: 16px;
+  background: #f6f7fb;
+  color: #555;
 }
 
-.manager-logo {
+.manager-loading-spinner {
   width: 42px;
   height: 42px;
-  border-radius: 11px;
-  background: white;
-  overflow: hidden;
+  border: 4px solid #e7e5ff;
+  border-top-color: #6d5dfc;
+  border-radius: 50%;
+  animation: manager-spin 0.8s linear infinite;
+}
+
+@keyframes manager-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.manager-heading {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.manager-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.manager-brand-text h2 {
-  margin: 0;
-  font-size: 18px;
-  letter-spacing: 1px;
-}
-
-.manager-brand-text span {
-  display: block;
-  margin-top: 3px;
-  color: #9298ad;
-  font-size: 10px;
-}
-
-.manager-sidebar-label {
-  padding: 21px 22px 9px;
-  color: #6f768c;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.3px;
-}
-
-.manager-system-label {
-  margin-top: auto;
-}
-
-.manager-nav {
-  padding: 0 12px;
-  overflow-y: auto;
-}
-
-.manager-nav-item {
-  width: 100%;
-  height: 44px;
-  border: none;
-  background: transparent;
-  color: #aeb4c7;
-  padding: 0 12px;
-  border-radius: 9px;
-  margin-bottom: 4px;
-  text-align: left;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: 0.2s ease;
-}
-
-.manager-nav-item:hover {
-  background: rgba(255,255,255,0.06);
-  color: white;
-}
-
-.manager-nav-item.active {
-  background: #5b5ce2;
-  color: white;
-  box-shadow: 0 5px 16px rgba(91,92,226,0.28);
-}
-
-.manager-nav-icon {
-  width: 20px;
-  text-align: center;
-  font-size: 15px;
-}
-
-.manager-sidebar-bottom {
-  padding: 15px 12px;
-  border-top: 1px solid rgba(255,255,255,0.07);
-}
-
-.manager-mini-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 9px 14px;
-}
-
-.manager-mini-avatar {
-  width: 35px;
-  height: 35px;
-  border-radius: 9px;
-  background: #5b5ce2;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.manager-mini-info {
-  min-width: 0;
-}
-
-.manager-mini-info strong,
-.manager-mini-info span {
-  display: block;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.manager-mini-info strong {
-  font-size: 12px;
-}
-
-.manager-mini-info span {
-  margin-top: 2px;
-  color: #7f869b;
-  font-size: 10px;
-}
-
-.manager-logout {
-  width: 100%;
-  height: 40px;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px;
-  background: transparent;
-  color: #9ca3b6;
-  padding: 0 12px;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  transition: 0.2s ease;
-}
-
-.manager-logout:hover {
-  background: rgba(223,77,90,0.1);
-  color: #ff8992;
-}
-
-/* ================= MAIN ================= */
-
-.manager-main {
-  margin-left: 260px;
-  width: calc(100% - 260px);
-  padding: 0 34px 40px;
-  min-width: 0;
-}
-
-.manager-topbar {
-  min-height: 110px;
-  display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: center;
-  gap: 20px;
+  gap: 24px;
+  margin-bottom: 28px;
 }
 
-.manager-breadcrumb {
-  color: #9299aa;
-  font-size: 11px;
-  font-weight: 600;
+.manager-eyebrow {
+  display: inline-block;
   margin-bottom: 8px;
+  color: #6d5dfc;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
 }
 
-.manager-breadcrumb span {
-  margin: 0 7px;
-  color: #c4c8d2;
-}
-
-.manager-topbar h1 {
+.manager-heading h1 {
   margin: 0;
-  font-size: 25px;
-  letter-spacing: -0.5px;
+  color: #171722;
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.15;
+  letter-spacing: -1px;
 }
 
-.manager-topbar p {
-  margin: 7px 0 0;
-  color: #747c90;
-  font-size: 13px;
-}
-
-.manager-topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.manager-refresh {
-  width: 38px;
-  height: 38px;
-  border: 1px solid #e5e7ee;
-  background: white;
-  color: #687086;
-  border-radius: 9px;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.manager-refresh:hover {
-  color: #5b5ce2;
-  border-color: #cfd1f7;
-}
-
-.manager-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.manager-profile > div:last-child {
-  display: flex;
-  flex-direction: column;
-}
-
-.manager-profile strong {
-  font-size: 12px;
-}
-
-.manager-profile span {
-  color: #838a9d;
-  font-size: 10px;
-  margin-top: 3px;
-}
-
-.manager-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
-  background: #5b5ce2;
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: 700;
+.manager-heading p {
+  margin: 10px 0 0;
+  color: #7e7f8d;
   font-size: 14px;
 }
 
-/* ================= STATS ================= */
-
-.manager-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.manager-stat-card {
-  background: white;
-  border: 1px solid #e8eaf1;
-  border-radius: 13px;
-  padding: 18px;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  box-shadow: 0 3px 12px rgba(20,27,50,0.035);
-}
-
-.manager-stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+.manager-refresh-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  gap: 8px;
+  padding: 11px 16px;
+  border: 1px solid #e4e4ed;
+  border-radius: 12px;
+  background: #fff;
+  color: #3d3d48;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.manager-refresh-btn:hover {
+  color: #6d5dfc;
+  border-color: #d8d4ff;
+  transform: translateY(-1px);
+}
+
+/* =========================
+   STATS
+========================= */
+
+.manager-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.manager-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 115px;
+  padding: 20px;
+  border: 1px solid #e9e9f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(24, 24, 40, 0.04);
+  transition: all 0.2s ease;
+}
+
+.manager-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 35px rgba(24, 24, 40, 0.08);
+}
+
+.manager-stat-icon {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+  border-radius: 13px;
+  font-size: 17px;
+  font-weight: 800;
 }
 
-.manager-stat-icon.purple {
-  background: #eeeefe;
-  color: #5b5ce2;
+.manager-stat-card.purple .manager-stat-icon {
+  background: #eeebff;
+  color: #6d5dfc;
 }
 
-.manager-stat-icon.blue {
-  background: #edf5ff;
-  color: #3984d8;
+.manager-stat-card.blue .manager-stat-icon {
+  background: #e9f3ff;
+  color: #3182ce;
 }
 
-.manager-stat-icon.green {
-  background: #e9f8f1;
-  color: #16a36a;
+.manager-stat-card.green .manager-stat-icon {
+  background: #e8f8ef;
+  color: #27a66f;
 }
 
-.manager-stat-icon.orange {
-  background: #fff5df;
-  color: #e59a16;
+.manager-stat-card.orange .manager-stat-icon {
+  background: #fff1e5;
+  color: #ed8b32;
 }
 
 .manager-stat-card span {
   display: block;
-  color: #8a91a3;
+  color: #9697a4;
   font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.7px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
 }
 
 .manager-stat-card strong {
   display: block;
-  margin-top: 6px;
+  margin-top: 5px;
+  color: #242430;
   font-size: 17px;
 }
 
 .manager-stat-card small {
   display: block;
-  margin-top: 3px;
-  color: #9299aa;
-  font-size: 9px;
+  margin-top: 4px;
+  color: #9a9ba7;
+  font-size: 10px;
 }
 
-/* ================= WELCOME ================= */
+/* =========================
+   MAIN GRID
+========================= */
 
-.manager-welcome {
-  min-height: 190px;
-  background: linear-gradient(110deg, #191c32, #292d4b);
-  color: white;
-  border-radius: 14px;
-  padding: 28px 34px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  overflow: hidden;
+.manager-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.7fr);
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+/* =========================
+   WELCOME
+========================= */
+
+.manager-welcome-card {
   position: relative;
+  min-height: 280px;
+  overflow: hidden;
+  border-radius: 22px;
+  background:
+    linear-gradient(
+      135deg,
+      #171522 0%,
+      #211d38 55%,
+      #30275b 100%
+    );
+  box-shadow: 0 15px 40px rgba(30, 26, 55, 0.15);
 }
 
 .manager-welcome-content {
-  max-width: 680px;
   position: relative;
   z-index: 2;
+  max-width: 620px;
+  padding: 32px;
 }
 
-.manager-welcome-label {
-  font-size: 9px;
-  letter-spacing: 1.2px;
-  font-weight: 700;
-  color: #aeb1ff;
-}
-
-.manager-welcome h2 {
-  margin: 8px 0;
-  font-size: 23px;
-  letter-spacing: -0.4px;
-}
-
-.manager-welcome p {
-  margin: 0;
-  max-width: 570px;
-  color: #aeb4c8;
-  font-size: 11px;
-  line-height: 1.6;
-}
-
-.manager-welcome-actions {
-  display: flex;
-  gap: 9px;
-  margin-top: 18px;
-}
-
-.manager-welcome-actions button {
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.08);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
+.manager-welcome-content > span {
+  color: #aaa1ff;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.manager-welcome-content h2 {
+  margin: 11px 0;
+  color: #fff;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.12;
+  letter-spacing: -0.8px;
+}
+
+.manager-welcome-content p {
+  max-width: 570px;
+  margin: 0;
+  color: #bcb8ca;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.manager-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.manager-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: all 0.2s ease;
 }
 
-.manager-welcome-actions button:hover {
-  background: rgba(255,255,255,0.15);
+.primary-manager-action {
+  border: 0;
+  background: #fff;
+  color: #262232;
 }
 
-.manager-welcome-actions button span {
-  margin-left: 8px;
+.secondary-manager-action {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
 }
 
-.manager-welcome-logo {
-  width: 115px;
-  height: 115px;
-  background: white;
-  border-radius: 25px;
-  padding: 17px;
+.manager-actions button:hover {
+  transform: translateY(-2px);
+}
+
+.manager-welcome-decoration {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 42%;
+  height: 100%;
+}
+
+.manager-orbit {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+}
+
+.orbit-one {
+  width: 280px;
+  height: 280px;
+  top: -85px;
+  right: -65px;
+}
+
+.orbit-two {
+  width: 190px;
+  height: 190px;
+  right: 50px;
+  bottom: -110px;
+}
+
+.manager-brand-circle {
+  position: absolute;
+  top: 50%;
+  right: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  width: 125px;
+  height: 125px;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
 }
 
-.manager-welcome-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+.manager-brand-circle span {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 2px;
 }
 
-/* ================= PERMISSIONS ================= */
+/* =========================
+   ACCOUNT CARD
+========================= */
+
+.manager-account-card {
+  padding: 23px;
+  border: 1px solid #e9e9f0;
+  border-radius: 22px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 8px 28px rgba(24, 24, 40, 0.04);
+}
+
+.manager-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+}
+
+.manager-card-heading > div:first-child > span {
+  color: #6d5dfc;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.manager-card-heading h2 {
+  margin: 4px 0 0;
+  color: #242430;
+  font-size: 16px;
+}
+
+.profile-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #eaf8f0;
+  color: #279a67;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.profile-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2ab776;
+}
+
+.large-manager-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 70px;
+  margin: 25px auto 12px;
+  border-radius: 21px;
+  background: linear-gradient(135deg, #6d5dfc, #877aff);
+  color: #fff;
+  font-size: 27px;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(109, 93, 252, 0.22);
+}
+
+.manager-account-card h3 {
+  margin: 0;
+  color: #242430;
+  font-size: 16px;
+}
+
+.manager-account-card > p {
+  margin: 5px 0 20px;
+  color: #9697a4;
+  font-size: 11px;
+  word-break: break-word;
+}
+
+.account-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid #eeeeF3;
+  padding-top: 16px;
+}
+
+.account-details span {
+  display: block;
+  color: #a0a1ac;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.account-details strong {
+  display: block;
+  margin-top: 5px;
+  color: #343440;
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+/* =========================
+   PERMISSIONS
+========================= */
 
 .manager-permissions-card {
-  background: white;
-  border: 1px solid #e8eaf1;
-  border-radius: 14px;
-  padding: 23px;
-  box-shadow: 0 3px 12px rgba(20,27,50,0.035);
+  padding: 24px;
+  border: 1px solid #e9e9f0;
+  border-radius: 21px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(24, 24, 40, 0.04);
 }
 
-.manager-section-header {
+.manager-permissions-heading {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
   gap: 20px;
   margin-bottom: 20px;
 }
 
-.manager-section-label {
-  display: block;
-  color: #5b5ce2;
+.manager-permissions-heading > div:first-child > span {
+  color: #6d5dfc;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1px;
-  margin-bottom: 5px;
 }
 
-.manager-section-header h2 {
+.manager-permissions-heading h2 {
+  margin: 5px 0;
+  color: #242430;
+  font-size: 18px;
+}
+
+.manager-permissions-heading p {
   margin: 0;
-  font-size: 17px;
-}
-
-.manager-section-header p {
-  margin: 5px 0 0;
-  color: #8a91a3;
+  color: #9697a4;
   font-size: 11px;
 }
 
-.manager-permission-count {
-  min-width: 68px;
-  height: 55px;
-  background: #f1f1ff;
-  color: #5b5ce2;
-  border-radius: 11px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 800;
+.permission-count {
+  min-width: 75px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #f4f2ff;
+  text-align: center;
 }
 
-.manager-permission-count span {
-  margin-top: 2px;
+.permission-count strong {
+  display: block;
+  color: #6d5dfc;
+  font-size: 21px;
+}
+
+.permission-count span {
+  color: #8c88aa;
   font-size: 8px;
-  font-weight: 600;
-  color: #7475c5;
+  font-weight: 700;
 }
 
 .permission-tags {
@@ -508,235 +493,308 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 11px;
-  background: #f6f7fa;
-  border: 1px solid #e9ebf0;
-  border-radius: 8px;
-  font-size: 11px;
-  color: #50586b;
+  padding: 9px 12px;
+  border: 1px solid #e9e7ff;
+  border-radius: 10px;
+  background: #faf9ff;
+  color: #575467;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: capitalize;
 }
 
 .permission-tag span {
-  color: #16a36a;
-  font-weight: 700;
-}
-
-.no-permissions {
-  text-align: center;
-  padding: 35px 20px;
-  color: #747c90;
-}
-
-.no-permission-icon {
-  width: 50px;
-  height: 50px;
-  margin: 0 auto 10px;
-  border-radius: 14px;
-  background: #f3f4f7;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 21px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e9f8ef;
+  color: #27a66f;
+  font-size: 9px;
+}
+
+.no-permissions {
+  padding: 35px 20px;
+  border: 1px dashed #dddce8;
+  border-radius: 15px;
+  background: #fafafd;
+  text-align: center;
+}
+
+.lock-icon {
+  margin-bottom: 10px;
+  font-size: 25px;
 }
 
 .no-permissions h3 {
-  color: #22283a;
-  margin: 8px 0 5px;
+  margin: 0;
+  color: #30303b;
   font-size: 14px;
 }
 
 .no-permissions p {
-  max-width: 400px;
-  margin: auto;
+  max-width: 450px;
+  margin: 7px auto 0;
+  color: #9697a4;
   font-size: 11px;
   line-height: 1.6;
 }
 
-/* ================= LOADING ================= */
+/* =========================
+   RESPONSIVE
+========================= */
 
-.manager-loading {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #f5f7fb;
-}
-
-.manager-loading-box {
-  text-align: center;
-}
-
-.manager-loading-box img {
-  width: 65px;
-  height: 65px;
-  object-fit: contain;
-  margin: 0 auto 12px;
-}
-
-.manager-loading-box p {
-  margin: 0;
-  color: #747c90;
-  font-size: 13px;
-}
-
-/* ================= RESPONSIVE ================= */
-
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .manager-stats {
     grid-template-columns: repeat(2, 1fr);
   }
-}
 
-@media (max-width: 800px) {
-  .manager-sidebar {
-    width: 215px;
-  }
-
-  .manager-main {
-    margin-left: 215px;
-    width: calc(100% - 215px);
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-
-  .manager-brand-text {
-    display: none;
-  }
-
-  .manager-nav-item {
-    justify-content: center;
-  }
-
-  .manager-nav-item span:last-child {
-    display: none;
-  }
-
-  .manager-sidebar-label {
-    text-align: center;
+  .manager-main-grid {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 600px) {
-  .manager-sidebar {
-    width: 68px;
+@media (max-width: 700px) {
+  .manager-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
   }
 
-  .manager-main {
-    margin-left: 68px;
-    width: calc(100% - 68px);
-    padding: 0 12px 25px;
-  }
-
-  .manager-brand {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .manager-logo {
-    width: 38px;
-    height: 38px;
-  }
-
-  .manager-nav {
-    padding: 0 7px;
-  }
-
-  .manager-nav-item {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .manager-nav-item span:last-child {
-    display: none;
-  }
-
-  .manager-nav-icon {
-    font-size: 15px;
-  }
-
-  .manager-sidebar-label {
-    display: none;
-  }
-
-  .manager-sidebar-bottom {
-    padding: 10px 7px;
-  }
-
-  .manager-mini-profile {
-    justify-content: center;
-    padding: 5px 0 10px;
-  }
-
-  .manager-mini-info {
-    display: none;
-  }
-
-  .manager-logout {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .manager-logout span:last-child {
-    display: none;
-  }
-
-  .manager-topbar {
-    min-height: 95px;
-  }
-
-  .manager-topbar h1 {
-    font-size: 19px;
-  }
-
-  .manager-topbar p {
-    font-size: 10px;
-  }
-
-  .manager-profile > div:last-child {
-    display: none;
+  .manager-refresh-btn {
+    width: 100%;
   }
 
   .manager-stats {
     grid-template-columns: 1fr 1fr;
-    gap: 9px;
+    gap: 12px;
   }
 
   .manager-stat-card {
-    padding: 13px;
+    min-height: 105px;
+    padding: 15px;
+    gap: 11px;
+    border-radius: 15px;
+  }
+
+  .manager-stat-icon {
+    width: 37px;
+    height: 37px;
+    border-radius: 10px;
+  }
+
+  .manager-stat-card span {
+    font-size: 8px;
   }
 
   .manager-stat-card strong {
     font-size: 14px;
   }
 
-  .manager-welcome {
-    padding: 22px;
+  .manager-stat-card small {
+    font-size: 9px;
   }
 
-  .manager-welcome-logo {
-    display: none;
+  .manager-welcome-card {
+    min-height: 310px;
   }
 
-  .manager-welcome h2 {
-    font-size: 19px;
+  .manager-welcome-content {
+    padding: 24px;
   }
 
-  .manager-welcome-actions {
-    flex-wrap: wrap;
+  .manager-welcome-decoration {
+    width: 100%;
+    opacity: 0.45;
   }
 
-  .manager-section-header {
-    align-items: flex-start;
+  .manager-brand-circle {
+    right: 25px;
+    top: 45px;
+    width: 90px;
+    height: 90px;
+  }
+
+  .manager-brand-circle span {
+    font-size: 9px;
+  }
+
+  .manager-permissions-card {
+    padding: 17px;
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 450px) {
   .manager-stats {
     grid-template-columns: 1fr;
   }
 
-  .manager-permission-count {
-    min-width: 55px;
+  .manager-heading h1 {
+    font-size: 25px;
+  }
+
+  .manager-heading p {
+    font-size: 13px;
+  }
+
+  .manager-welcome-content h2 {
+    font-size: 23px;
+  }
+
+  .manager-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .manager-actions button {
+    justify-content: center;
+  }
+
+  .manager-permissions-heading {
+    flex-direction: column;
+  }
+
+  .permission-count {
+    width: 100%;
+  }
+
+  .permission-tags {
+    gap: 7px;
+  }
+}
+/* =====================================================
+   CENTER PHOENIX LOGO
+===================================================== */
+
+.manager-dashboard-page {
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-center-logo {
+  position: fixed;
+  left: calc(50% + 126px);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 360px;
+  height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.035;
+}
+
+.dashboard-center-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.manager-dashboard-page > *:not(.dashboard-center-logo) {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 900px) {
+  .dashboard-center-logo {
+    left: 50%;
+    width: 280px;
+    height: 280px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-center-logo {
+    width: 220px;
+    height: 220px;
+    opacity: 0.025;
+  }
+}
+
+/* =====================================================
+   CENTER PHOENIX BRAND LOGO
+===================================================== */
+
+.manager-dashboard-page {
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-center-logo {
+  position: fixed;
+
+  /*
+    126px compensates for the desktop sidebar.
+    This keeps the logo centered in the main content area.
+  */
+  left: calc(50% + 126px);
+
+  top: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 360px;
+  height: 360px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: none;
+
+  z-index: 0;
+
+  opacity: 0.045;
+}
+
+.dashboard-center-logo img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+/*
+  Keep dashboard content above the logo
+*/
+
+.manager-dashboard-page > *:not(.dashboard-center-logo) {
+  position: relative;
+  z-index: 1;
+}
+
+
+/* =====================================================
+   TABLET
+===================================================== */
+
+@media (max-width: 900px) {
+  .dashboard-center-logo {
+    left: 50%;
+
+    width: 300px;
+    height: 300px;
+
+    opacity: 0.035;
+  }
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 600px) {
+  .dashboard-center-logo {
+    left: 50%;
+
+    width: 220px;
+    height: 220px;
+
+    opacity: 0.025;
   }
 }

@@ -1,50 +1,66 @@
+/* =========================================================
+   PHOENIX — GLOBAL DESIGN SYSTEM
+   Modern Responsive SaaS UI
+========================================================= */
+
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
+/* =========================================================
+   ROOT VARIABLES
+========================================================= */
+
 :root {
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+  --phoenix-primary: #6d5dfc;
+  --phoenix-primary-dark: #5748e8;
+  --phoenix-primary-light: #eeecff;
+
+  --phoenix-bg: #f6f7fb;
+  --phoenix-surface: #ffffff;
+  --phoenix-surface-soft: #fafbff;
+
+  --phoenix-text: #111827;
+  --phoenix-text-secondary: #667085;
+  --phoenix-text-muted: #98a2b3;
+
+  --phoenix-border: #e7e9f0;
+
+  --phoenix-success: #12b76a;
+  --phoenix-warning: #f79009;
+  --phoenix-danger: #f04438;
+  --phoenix-info: #2e90fa;
+
+  --phoenix-radius-sm: 8px;
+  --phoenix-radius-md: 12px;
+  --phoenix-radius-lg: 18px;
+  --phoenix-radius-xl: 24px;
+
+  --phoenix-shadow-sm:
+    0 2px 8px rgba(16, 24, 40, 0.04);
+
+  --phoenix-shadow-md:
+    0 8px 24px rgba(16, 24, 40, 0.06);
+
+  --phoenix-shadow-lg:
+    0 16px 40px rgba(16, 24, 40, 0.08);
+
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
     sans-serif;
 
-  color: #172033;
-  background: #f5f7fb;
+  color: var(--phoenix-text);
+  background: var(--phoenix-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-
-  --primary: #5b5ce2;
-  --primary-dark: #4849c7;
-  --primary-light: #eef0ff;
-
-  --dark: #15182b;
-  --dark-soft: #20243b;
-
-  --text: #172033;
-  --text-secondary: #687086;
-  --text-light: #9299aa;
-
-  --background: #f5f7fb;
-  --surface: #ffffff;
-  --border: #e8eaf1;
-
-  --success: #16a36a;
-  --success-bg: #e9f8f1;
-
-  --warning: #e59a16;
-  --warning-bg: #fff6df;
-
-  --danger: #df4d5a;
-  --danger-bg: #fff0f1;
-
-  --info: #3984d8;
-  --info-bg: #edf6ff;
-
-  --shadow-sm: 0 2px 8px rgba(20, 27, 50, 0.05);
-  --shadow: 0 8px 30px rgba(20, 27, 50, 0.07);
-
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 18px;
 }
+
+/* =========================================================
+   RESET
+========================================================= */
 
 * {
   box-sizing: border-box;
@@ -58,8 +74,16 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: var(--background);
-  color: var(--text);
+
+  background: var(--phoenix-bg);
+  color: var(--phoenix-text);
+
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
 button,
@@ -70,7 +94,12 @@ select {
 }
 
 button {
-  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 a {
@@ -83,11 +112,22 @@ img {
   display: block;
 }
 
-/* Scrollbar */
+/* =========================================================
+   SELECTION
+========================================================= */
+
+::selection {
+  background: var(--phoenix-primary);
+  color: #ffffff;
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
 
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -95,116 +135,389 @@ img {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cdd1dc;
-  border-radius: 20px;
+  background: #d0d5dd;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #aeb4c3;
+  background: #98a2b3;
 }
 
-/* Selection */
+/* =========================================================
+   COMMON PAGE
+========================================================= */
 
-::selection {
-  background: var(--primary-light);
-  color: var(--primary-dark);
+.phoenix-page {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--phoenix-bg);
 }
 
-/* Common utility styles */
+.phoenix-container {
+  width: min(100% - 40px, 1440px);
+  margin: 0 auto;
+}
+
+/* =========================================================
+   COMMON CARD
+========================================================= */
 
 .phoenix-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
+  background: var(--phoenix-surface);
+  border: 1px solid var(--phoenix-border);
+  border-radius: var(--phoenix-radius-lg);
+  box-shadow: var(--phoenix-shadow-sm);
 }
+
+/* =========================================================
+   COMMON BUTTONS
+========================================================= */
 
 .phoenix-btn {
-  border: none;
-  border-radius: 9px;
-  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 42px;
+  padding: 0 16px;
+
+  border: 1px solid transparent;
+  border-radius: var(--phoenix-radius-md);
+
+  font-size: 14px;
   font-weight: 600;
-  transition: 0.2s ease;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
 }
 
-.phoenix-btn:hover {
+.phoenix-btn:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
 .phoenix-btn-primary {
-  background: var(--primary);
-  color: white;
+  background: var(--phoenix-primary);
+  color: #ffffff;
+
+  box-shadow:
+    0 5px 14px rgba(109, 93, 252, 0.22);
 }
 
-.phoenix-btn-primary:hover {
-  background: var(--primary-dark);
+.phoenix-btn-primary:hover:not(:disabled) {
+  background: var(--phoenix-primary-dark);
+  box-shadow:
+    0 8px 20px rgba(109, 93, 252, 0.28);
 }
 
 .phoenix-btn-secondary {
-  background: #f0f1f6;
-  color: var(--text);
+  background: #ffffff;
+  color: var(--phoenix-text);
+  border-color: var(--phoenix-border);
 }
 
-.phoenix-btn-secondary:hover {
-  background: #e6e8ef;
+.phoenix-btn-secondary:hover:not(:disabled) {
+  background: #f9fafb;
 }
 
-.phoenix-btn-danger {
-  background: var(--danger-bg);
-  color: var(--danger);
+/* =========================================================
+   COMMON INPUTS
+========================================================= */
+
+.phoenix-input,
+.phoenix-select,
+.phoenix-textarea {
+  width: 100%;
+
+  border: 1px solid var(--phoenix-border);
+  border-radius: var(--phoenix-radius-md);
+
+  background: #ffffff;
+  color: var(--phoenix-text);
+
+  outline: none;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-/* Status badges */
+.phoenix-input,
+.phoenix-select {
+  min-height: 44px;
+  padding: 0 13px;
+}
 
-.status-badge {
+.phoenix-textarea {
+  min-height: 110px;
+  padding: 12px 13px;
+  resize: vertical;
+}
+
+.phoenix-input:focus,
+.phoenix-select:focus,
+.phoenix-textarea:focus {
+  border-color: var(--phoenix-primary);
+
+  box-shadow:
+    0 0 0 3px rgba(109, 93, 252, 0.12);
+}
+
+/* =========================================================
+   FORM LABEL
+========================================================= */
+
+.phoenix-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #344054;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   BADGES
+========================================================= */
+
+.phoenix-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
+
+  min-height: 28px;
+  padding: 0 10px;
+
   border-radius: 999px;
+
   font-size: 12px;
   font-weight: 600;
 }
 
-.status-active,
-.status-completed {
-  background: var(--success-bg);
-  color: var(--success);
+.phoenix-badge-success {
+  background: #ecfdf3;
+  color: #027a48;
 }
 
-.status-pending,
-.status-review {
-  background: var(--warning-bg);
-  color: var(--warning);
+.phoenix-badge-warning {
+  background: #fffaeb;
+  color: #b54708;
 }
 
-.status-inactive,
-.status-rejected {
-  background: var(--danger-bg);
-  color: var(--danger);
+.phoenix-badge-danger {
+  background: #fef3f2;
+  color: #b42318;
 }
 
-.status-info {
-  background: var(--info-bg);
-  color: var(--info);
+.phoenix-badge-info {
+  background: #eff8ff;
+  color: #175cd3;
 }
 
-/* Loading */
+.phoenix-badge-neutral {
+  background: #f2f4f7;
+  color: #475467;
+}
 
-.phoenix-loading {
-  min-height: 100vh;
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+
+.phoenix-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+
+  margin-bottom: 28px;
+}
+
+.phoenix-page-title {
+  margin: 0;
+
+  color: var(--phoenix-text);
+
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.phoenix-page-description {
+  margin: 8px 0 0;
+
+  color: var(--phoenix-text-secondary);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   STAT CARDS
+========================================================= */
+
+.phoenix-stats-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+.phoenix-stat-card {
+  padding: 20px;
+
+  background: #ffffff;
+
+  border: 1px solid var(--phoenix-border);
+  border-radius: var(--phoenix-radius-lg);
+
+  box-shadow: var(--phoenix-shadow-sm);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.phoenix-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--phoenix-shadow-md);
+}
+
+.phoenix-stat-label {
+  color: var(--phoenix-text-secondary);
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.phoenix-stat-value {
+  margin-top: 8px;
+
+  color: var(--phoenix-text);
+
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.phoenix-empty {
+  padding: 50px 24px;
+
+  text-align: center;
+
+  background: #ffffff;
+
+  border: 1px dashed var(--phoenix-border);
+  border-radius: var(--phoenix-radius-lg);
+}
+
+.phoenix-empty-icon {
+  width: 52px;
+  height: 52px;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background);
-  color: var(--text-secondary);
-  font-size: 15px;
+
+  margin: 0 auto 14px;
+
+  border-radius: 16px;
+
+  background: var(--phoenix-primary-light);
+
+  font-size: 24px;
 }
 
-/* Mobile */
+.phoenix-empty-title {
+  margin: 0;
 
-@media (max-width: 768px) {
-  body {
-    overflow-x: hidden;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.phoenix-empty-text {
+  margin: 7px auto 0;
+
+  max-width: 430px;
+
+  color: var(--phoenix-text-secondary);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 900px) {
+  .phoenix-container {
+    width: min(100% - 28px, 720px);
+  }
+
+  .phoenix-stats-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .phoenix-container {
+    width: min(100% - 20px, 100%);
+  }
+
+  .phoenix-page-header {
+    flex-direction: column;
+    margin-bottom: 22px;
+  }
+
+  .phoenix-page-title {
+    font-size: 25px;
+  }
+
+  .phoenix-page-description {
+    font-size: 13px;
+  }
+
+  .phoenix-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .phoenix-stat-card {
+    padding: 16px;
+  }
+
+  .phoenix-stat-value {
+    font-size: 24px;
+  }
+
+  .phoenix-btn {
+    min-height: 44px;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 400px) {
+  .phoenix-container {
+    width: calc(100% - 16px);
+  }
+
+  .phoenix-page-title {
+    font-size: 23px;
   }
 }

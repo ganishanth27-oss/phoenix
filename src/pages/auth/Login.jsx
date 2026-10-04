@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import logo from "../../assets/phoenix-logo.png";
+import phoenixLogo from "../../assets/phoenix-logo.png";
 import "./Login.css";
 
 function Login() {
@@ -9,21 +9,31 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (event) => {
+    event.preventDefault();
 
     setError("");
+
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { data, error: loginError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const {
+        data,
+        error: loginError,
+      } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
       if (loginError) {
         throw loginError;
@@ -33,181 +43,420 @@ function Login() {
         throw new Error("Login failed. Please try again.");
       }
 
-      const { data: profile, error: profileError } = await supabase
+      const {
+        data: profile,
+        error: profileError,
+      } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, name, email, role, status")
         .eq("id", data.user.id)
         .single();
 
-      if (profileError || !profile) {
+      if (profileError) {
+        throw profileError;
+      }
+
+      if (!profile) {
         await supabase.auth.signOut();
-        throw new Error("Your account profile was not found.");
+
+        throw new Error(
+          "Your account profile was not found."
+        );
       }
 
       if (profile.status !== "active") {
         await supabase.auth.signOut();
-        throw new Error("Your account is currently inactive.");
+
+        throw new Error(
+          "Your account is currently inactive."
+        );
       }
 
       if (profile.role === "admin") {
         navigate("/admin");
       } else if (profile.role === "manager") {
         navigate("/manager");
-      } else {
+      } else if (profile.role === "user") {
         navigate("/user");
+      } else {
+        await supabase.auth.signOut();
+
+        throw new Error(
+          "Your account has an invalid role."
+        );
       }
-    } catch (err) {
-      setError(err.message || "Unable to login. Please try again.");
+    } catch (loginError) {
+      console.error("Login error:", loginError);
+
+      setError(
+        loginError.message ||
+          "Unable to sign in. Please check your details."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-page">
-      {/* LEFT BRAND SECTION */}
-      <div className="login-brand">
-        <div className="brand-content">
-          <div className="brand-logo-wrapper">
-            <img src={logo} alt="PHOENIX" className="brand-logo" />
+    <main className="login-page">
+
+      {/* =====================================================
+          BRAND PANEL
+      ===================================================== */}
+
+      <section className="login-brand">
+
+        <div className="login-brand-glow login-brand-glow-one" />
+        <div className="login-brand-glow login-brand-glow-two" />
+
+        <div className="login-brand-content">
+
+          {/* LOGO */}
+
+          <div className="login-logo-wrap">
+            <img
+              src={phoenixLogo}
+              alt="PHOENIX"
+              className="login-logo"
+            />
           </div>
 
-          <h1>PHOENIX</h1>
+          {/* BRAND */}
 
-          <p className="brand-tagline">
-            Powering work. Managing progress.
-          </p>
+          <div className="login-brand-text">
 
-          <div className="brand-line"></div>
-
-          <p className="brand-description">
-            A smart workspace for managing services, projects, tasks and
-            collaboration in one place.
-          </p>
-
-          <div className="brand-features">
-            <div className="brand-feature">
-              <span>✓</span>
-              <p>Manage projects</p>
+            <div className="login-brand-badge">
+              PHOENIX WORKSPACE
             </div>
 
-            <div className="brand-feature">
-              <span>✓</span>
-              <p>Track requests</p>
-            </div>
+            <h1>
+              Work smarter.
+              <br />
+              <span>Move faster.</span>
+            </h1>
 
-            <div className="brand-feature">
-              <span>✓</span>
-              <p>Work with your team</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="brand-footer">
-          © 2026 PHOENIX Workspace
-        </div>
-      </div>
-
-      {/* RIGHT LOGIN SECTION */}
-      <div className="login-section">
-        <div className="login-card">
-          <div className="mobile-logo">
-            <img src={logo} alt="PHOENIX" />
-            <span>PHOENIX</span>
-          </div>
-
-          <div className="login-heading">
-            <span className="login-small-title">WELCOME BACK</span>
-
-            <h2>Sign in to PHOENIX</h2>
-
-            <p>
-              Access your workspace and continue where you left off.
+            <p className="login-brand-description">
+              One connected workspace to manage
+              people, projects, requests, tasks
+              and your company's daily operations.
             </p>
+
           </div>
+
+          {/* FEATURES */}
+
+          <div className="login-feature-list">
+
+            <div className="login-feature">
+
+              <div className="login-feature-icon">
+                ✓
+              </div>
+
+              <div>
+                <strong>
+                  One connected workspace
+                </strong>
+
+                <span>
+                  Keep your company work organized.
+                </span>
+              </div>
+
+            </div>
+
+            <div className="login-feature">
+
+              <div className="login-feature-icon">
+                ✓
+              </div>
+
+              <div>
+                <strong>
+                  Role-based access
+                </strong>
+
+                <span>
+                  Everyone gets the right workspace.
+                </span>
+              </div>
+
+            </div>
+
+            <div className="login-feature">
+
+              <div className="login-feature-icon">
+                ✓
+              </div>
+
+              <div>
+                <strong>
+                  Built for modern teams
+                </strong>
+
+                <span>
+                  From requests to completed projects.
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div className="login-brand-footer">
+          <span>© {new Date().getFullYear()} PHOENIX</span>
+          <span>Management Workspace</span>
+        </div>
+
+      </section>
+
+
+      {/* =====================================================
+          LOGIN SECTION
+      ===================================================== */}
+
+      <section className="login-form-section">
+
+        {/* MOBILE LOGO */}
+
+        <div className="login-mobile-logo">
+
+          <div className="login-mobile-logo-box">
+            <img
+              src={phoenixLogo}
+              alt="PHOENIX"
+            />
+          </div>
+
+          <div>
+            <strong>PHOENIX</strong>
+            <span>WORKSPACE</span>
+          </div>
+
+        </div>
+
+
+        {/* LOGIN CARD */}
+
+        <div className="login-card">
+
+          {/* HEADER */}
+
+          <div className="login-card-header">
+
+            <div className="login-welcome-icon">
+              <span>→</span>
+            </div>
+
+            <div>
+
+              <p className="login-card-eyebrow">
+                WELCOME BACK
+              </p>
+
+              <h2>
+                Sign in to PHOENIX
+              </h2>
+
+              <p>
+                Continue to your workspace.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          {/* ERROR */}
 
           {error && (
             <div className="login-error">
-              <span>!</span>
-              <p>{error}</p>
+
+              <div className="login-error-icon">
+                !
+              </div>
+
+              <p>
+                {error}
+              </p>
+
             </div>
           )}
 
-          <form onSubmit={handleLogin}>
-            <div className="form-group">
-              <label htmlFor="email">Email address</label>
 
-              <div className="input-wrapper">
-                <span className="input-icon">✉</span>
+          {/* FORM */}
+
+          <form
+            className="login-form"
+            onSubmit={handleLogin}
+          >
+
+            {/* EMAIL */}
+
+            <div className="login-field">
+
+              <label htmlFor="email">
+                Email address
+              </label>
+
+              <div className="login-input-wrap">
+
+                <span className="login-input-icon">
+                  @
+                </span>
 
                 <input
                   id="email"
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="you@company.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  onChange={(event) =>
+                    setEmail(event.target.value)
+                  }
                   autoComplete="email"
+                  disabled={loading}
                 />
+
               </div>
+
             </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
 
-              <div className="input-wrapper">
-                <span className="input-icon">●</span>
+            {/* PASSWORD */}
+
+            <div className="login-field">
+
+              <div className="login-label-row">
+
+                <label htmlFor="password">
+                  Password
+                </label>
+
+              </div>
+
+              <div className="login-input-wrap">
+
+                <span className="login-input-icon login-password-icon">
+                  •••
+                </span>
 
                 <input
                   id="password"
-                  type="password"
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
                   placeholder="Enter your password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
                   autoComplete="current-password"
+                  disabled={loading}
                 />
+
+                <button
+                  type="button"
+                  className="login-password-toggle"
+                  onClick={() =>
+                    setShowPassword(
+                      !showPassword
+                    )
+                  }
+                  disabled={loading}
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                >
+                  {showPassword
+                    ? "Hide"
+                    : "Show"}
+                </button>
+
               </div>
+
             </div>
+
+
+            {/* SUBMIT */}
 
             <button
               type="submit"
-              className="login-button"
+              className="login-submit"
               disabled={loading}
             >
+
               {loading ? (
                 <>
-                  <span className="login-spinner"></span>
+                  <span className="login-spinner" />
                   Signing in...
                 </>
               ) : (
                 <>
-                  Sign In
-                  <span>→</span>
+                  <span>
+                    Sign in
+                  </span>
+
+                  <span className="login-submit-arrow">
+                    →
+                  </span>
                 </>
               )}
+
             </button>
+
           </form>
 
+
+          {/* REGISTER */}
+
           <div className="login-divider">
-            <span>OR</span>
+            <span>
+              Don't have an account?
+            </span>
           </div>
 
-          <div className="register-box">
-            <p>Don't have a PHOENIX account?</p>
+          <Link
+            to="/register"
+            className="login-register-button"
+          >
+            Create an account
+            <span>→</span>
+          </Link>
 
-            <Link to="/register" className="register-link">
-              Create an account
-              <span>→</span>
-            </Link>
+
+          {/* SECURITY */}
+
+          <div className="login-security">
+
+            <span className="login-security-icon">
+              ✓
+            </span>
+
+            <span>
+              Secure authentication powered by
+              Supabase
+            </span>
+
           </div>
 
-          <p className="login-security">
-            🔒 Your account is protected with secure authentication.
-          </p>
         </div>
-      </div>
-    </div>
+
+
+        {/* MOBILE FOOTER */}
+
+        <p className="login-mobile-footer">
+          © {new Date().getFullYear()} PHOENIX
+        </p>
+
+      </section>
+
+    </main>
   );
 }
 
