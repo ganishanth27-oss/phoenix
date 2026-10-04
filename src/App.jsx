@@ -34,9 +34,9 @@ import ManagerReports from "./pages/manager/ManagerReports";
 // ==================== USER ====================
 import UserDashboard from "./pages/user/UserDashboard";
 
-// ==================== PROTECTED ROUTE ====================
+// ==================== PROTECTED ROUTES ====================
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import ManagerPermissionRoute from "./components/ManagerPermissionRoute";
 
 function App() {
   // Show splash screen when website first opens
@@ -54,7 +54,6 @@ function App() {
   // ==================== MAIN APPLICATION ====================
   return (
     <BrowserRouter>
-
       <Routes>
 
         {/* =====================================================
@@ -148,6 +147,8 @@ function App() {
           }
         />
 
+        {/* ==================== MANAGER PERMISSIONS ==================== */}
+
         <Route
           path="/admin/permissions"
           element={
@@ -180,6 +181,8 @@ function App() {
             MANAGER
         ===================================================== */}
 
+        {/* ==================== MANAGER DASHBOARD ==================== */}
+
         <Route
           path="/manager"
           element={
@@ -189,79 +192,93 @@ function App() {
           }
         />
 
-        {/* Manager Requests */}
+        {/* ==================== MANAGER REQUESTS ==================== */}
+<Route
+  path="/manager/requests"
+  element={
+    <ProtectedRoute allowedRoles={["manager"]}>
+      <ManagerPermissionRoute permission="view_requests">
+        <ManagerRequests />
+      </ManagerPermissionRoute>
+    </ProtectedRoute>
+  }
+/>
 
-        <Route
-          path="/manager/requests"
-          element={
-            <ProtectedRoute allowedRoles={["manager"]}>
-              <ManagerRequests />
-            </ProtectedRoute>
-          }
-        />
 
-        {/* Manager Users */}
+        {/* ==================== MANAGER USERS ==================== */}
 
         <Route
           path="/manager/users"
           element={
             <ProtectedRoute allowedRoles={["manager"]}>
-              <ManagerUsers />
+              <ManagerPermissionRoute permission="view_users">
+                <ManagerUsers />
+              </ManagerPermissionRoute>
             </ProtectedRoute>
           }
         />
 
-        {/* Manager Projects */}
+        {/* ==================== MANAGER PROJECTS ==================== */}
 
         <Route
           path="/manager/projects"
           element={
             <ProtectedRoute allowedRoles={["manager"]}>
-              <ManagerProjects />
+              <ManagerPermissionRoute permission="view_projects">
+                <ManagerProjects />
+              </ManagerPermissionRoute>
             </ProtectedRoute>
           }
         />
 
-        {/* Manager Tasks */}
+        {/* ==================== MANAGER TASKS ==================== */}
 
         <Route
           path="/manager/tasks"
           element={
             <ProtectedRoute allowedRoles={["manager"]}>
-              <ManagerTasks />
+              <ManagerPermissionRoute permission="view_tasks">
+                <ManagerTasks />
+              </ManagerPermissionRoute>
             </ProtectedRoute>
           }
         />
 
-        {/* Manager Files */}
+        {/* ==================== MANAGER FILES ==================== */}
 
         <Route
           path="/manager/files"
           element={
             <ProtectedRoute allowedRoles={["manager"]}>
-              <ManagerFiles />
+              <ManagerPermissionRoute permission="upload_files">
+                <ManagerFiles />
+              </ManagerPermissionRoute>
             </ProtectedRoute>
           }
         />
 
-        {/* Manager Review Work */}
+        {/* ==================== MANAGER REVIEW ==================== */}
 
         <Route
           path="/manager/review"
           element={
             <ProtectedRoute allowedRoles={["manager"]}>
-              <ManagerReviewWork />
+              <ManagerPermissionRoute permission="review_work">
+                <ManagerReviewWork />
+              </ManagerPermissionRoute>
             </ProtectedRoute>
           }
         />
 
-        {/* Manager Reports */}
+        {/* ==================== MANAGER REPORTS ==================== */}
 
         <Route
           path="/manager/reports"
           element={
             <ProtectedRoute allowedRoles={["manager"]}>
-              <ManagerReports />
+              <ManagerPermissionRoute permission="view_reports">
+                <ManagerReports />
+              </ManagerPermissionRoute>
             </ProtectedRoute>
           }
         />
@@ -281,7 +298,6 @@ function App() {
         />
 
       </Routes>
-
     </BrowserRouter>
   );
 }

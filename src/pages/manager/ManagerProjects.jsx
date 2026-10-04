@@ -8,7 +8,10 @@ function ManagerProjects() {
 
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [canCreate, setCanCreate] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
 
   useEffect(() => {
     loadProjects();
@@ -27,35 +30,57 @@ function ManagerProjects() {
         return;
       }
 
-      // Check manager permission
-      const { data: permissionData, error: permissionError } =
-        await supabase
-          .from("manager_permissions")
-          .select(`
-            permissions:permission_id (
-              name
-            )
-          `)
-          .eq("manager_id", user.id);
+      // ============================
+      // LOAD MANAGER PERMISSIONS
+      // ============================
+
+      const {
+        data: permissionData,
+        error: permissionError,
+      } = await supabase
+        .from("manager_permissions")
+        .select(`
+          permissions:permission_id (
+            name
+          )
+        `)
+        .eq("manager_id", user.id);
 
       if (permissionError) {
         throw permissionError;
       }
 
       const permissions =
-        permissionData?.map((item) => item.permissions?.name).filter(Boolean) ||
-        [];
+        permissionData
+          ?.map((item) => item.permissions?.name)
+          .filter(Boolean) || [];
+
+      // ============================
+      // VIEW PERMISSION
+      // ============================
 
       if (!permissions.includes("view_projects")) {
-        setProjects([]);
-        setLoading(false);
+        alert("You do not have permission to view projects.");
+        navigate("/manager");
         return;
       }
 
-      setCanEdit(permissions.includes("edit_projects"));
+      // ============================
+      // OTHER PERMISSIONS
+      // ============================
 
-      // Load manager's projects
-      const { data, error } = await supabase
+      setCanCreate(permissions.includes("create_projects"));
+      setCanEdit(permissions.includes("edit_projects"));
+      setCanDelete(permissions.includes("delete_projects"));
+
+      // ============================
+      // LOAD PROJECTS
+      // ============================
+
+      const {
+        data,
+        error,
+      } = await supabase
         .from("projects")
         .select(`
           id,
@@ -90,6 +115,10 @@ function ManagerProjects() {
     }
   };
 
+  // ============================
+  // UPDATE PROJECT
+  // ============================
+
   const updateProject = async (projectId, field, value) => {
     if (!canEdit) {
       alert("You do not have permission to edit projects.");
@@ -97,6 +126,15 @@ function ManagerProjects() {
     }
 
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        navigate("/");
+        return;
+      }
+
       const { error } = await supabase
         .from("projects")
         .update({
@@ -104,7 +142,7 @@ function ManagerProjects() {
           updated_at: new Date().toISOString(),
         })
         .eq("id", projectId)
-        .eq("manager_id", (await supabase.auth.getUser()).data.user.id);
+        .eq("manager_id", user.id);
 
       if (error) {
         throw error;
@@ -117,66 +155,211 @@ function ManagerProjects() {
     }
   };
 
+  // ============================
+  // DELETE PROJECT
+  // ============================
+
+  const deleteProject = async (projectId) => {
+    if (!canDelete) {
+      alert("You do not have permission to delete projects.");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this project?"
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        navigate("/");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", projectId)
+        .eq("manager_id", user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      alert("Project deleted successfully.");
+
+      await loadProjects();
+    } catch (error) {
+      console.error("Project delete error:", error);
+      alert(error.message);
+    }
+  };
+
+  // ============================
+  // CREATE PROJECT
+  // ============================
+
+  const createProject = () => {
+    if (!canCreate) {
+      alert("You do not have permission to create projects.");
+      return;
+    }
+
+    /*
+      The actual project creation form can be connected here later.
+
+      For now, this button takes the manager to the dashboard.
+      We will build the complete Create Project form in the next step.
+    */
+
+    alert(
+      "Create Project permission is enabled. The project creation form will be added next."
+    );
+  };
+
+  // ============================
+  // LABEL FORMAT
+  // ============================
+
   const getLabel = (value) => {
+    if (!value) {
+      return "";
+    }
+
     return value
       .replaceAll("_", " ")
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
   };
 
+  // ============================
+  // UI
+  // ============================
+
   return (
     <div className="manager-projects-page">
+
+      {/* ================= HEADER ================= */}
+
       <header className="manager-projects-header">
+
         <div>
           <span>PHOENIX MANAGER</span>
-          <h1>My Projects</h1>
-          <p>Projects assigned to your account.</p>
+
+          <h1>
+            My Projects
+          </h1>
+
+          <p>
+            Projects assigned to your account.
+          </p>
         </div>
 
-        <button
-          className="back-manager-button"
-          onClick={() => navigate("/manager")}
-        >
-          ← Dashboard
-        </button>
+        <div className="manager-project-header-actions">
+
+          {canCreate && (
+            <button
+              className="create-project-button"
+              onClick={createProject}
+            >
+              + Create Project
+            </button>
+          )}
+
+          <button
+            className="back-manager-button"
+            onClick={() => navigate("/manager")}
+          >
+            ← Dashboard
+          </button>
+
+        </div>
+
       </header>
 
+      {/* ================= CONTENT ================= */}
+
       {loading ? (
+
         <div className="manager-projects-loading">
           Loading projects...
         </div>
-      ) : projects.length === 0 ? (
-        <div className="manager-projects-empty">
-          <div className="empty-icon">📁</div>
 
-          <h2>No Projects Assigned</h2>
+      ) : projects.length === 0 ? (
+
+        <div className="manager-projects-empty">
+
+          <div className="empty-icon">
+            📁
+          </div>
+
+          <h2>
+            No Projects Assigned
+          </h2>
 
           <p>
             You currently don't have any projects assigned to you.
           </p>
 
-          <button onClick={() => navigate("/manager")}>
+          {canCreate && (
+            <button
+              onClick={createProject}
+              className="create-project-empty-button"
+            >
+              + Create Project
+            </button>
+          )}
+
+          <button
+            onClick={() => navigate("/manager")}
+          >
             Back to Dashboard
           </button>
+
         </div>
+
       ) : (
+
         <div className="manager-project-list">
+
           {projects.map((project) => (
-            <div className="manager-project-card" key={project.id}>
+
+            <div
+              className="manager-project-card"
+              key={project.id}
+            >
+
+              {/* ================= PROJECT TOP ================= */}
+
               <div className="manager-project-top">
+
                 <div>
+
                   <div className="manager-project-title">
-                    <h2>{project.name}</h2>
+
+                    <h2>
+                      {project.name}
+                    </h2>
 
                     <span
                       className={`manager-project-priority priority-${project.priority}`}
                     >
                       {project.priority}
                     </span>
+
                   </div>
 
                   <p className="manager-project-service">
-                    {project.services?.name || "No service selected"}
+                    {project.services?.name ||
+                      "No service selected"}
                   </p>
+
                 </div>
 
                 <span
@@ -184,18 +367,36 @@ function ManagerProjects() {
                 >
                   {getLabel(project.status)}
                 </span>
+
               </div>
 
+              {/* ================= DESCRIPTION ================= */}
+
               {project.description && (
+
                 <div className="manager-project-description">
-                  <span>Description</span>
-                  <p>{project.description}</p>
+
+                  <span>
+                    Description
+                  </span>
+
+                  <p>
+                    {project.description}
+                  </p>
+
                 </div>
+
               )}
 
+              {/* ================= DETAILS ================= */}
+
               <div className="manager-project-details">
+
                 <div>
-                  <span>Start Date</span>
+                  <span>
+                    Start Date
+                  </span>
+
                   <strong>
                     {project.start_date
                       ? new Date(
@@ -206,7 +407,10 @@ function ManagerProjects() {
                 </div>
 
                 <div>
-                  <span>Due Date</span>
+                  <span>
+                    Due Date
+                  </span>
+
                   <strong>
                     {project.due_date
                       ? new Date(
@@ -217,14 +421,26 @@ function ManagerProjects() {
                 </div>
 
                 <div>
-                  <span>Priority</span>
-                  <strong>{getLabel(project.priority)}</strong>
+                  <span>
+                    Priority
+                  </span>
+
+                  <strong>
+                    {getLabel(project.priority)}
+                  </strong>
                 </div>
+
               </div>
 
+              {/* ================= EDIT ================= */}
+
               {canEdit && (
+
                 <div className="manager-project-controls">
-                  <label>Update Status</label>
+
+                  <label>
+                    Update Status
+                  </label>
 
                   <select
                     value={project.status}
@@ -236,6 +452,7 @@ function ManagerProjects() {
                       )
                     }
                   >
+
                     <option value="not_started">
                       Not Started
                     </option>
@@ -255,13 +472,40 @@ function ManagerProjects() {
                     <option value="on_hold">
                       On Hold
                     </option>
+
                   </select>
+
                 </div>
+
               )}
+
+              {/* ================= DELETE ================= */}
+
+              {canDelete && (
+
+                <div className="manager-project-delete-area">
+
+                  <button
+                    className="manager-project-delete"
+                    onClick={() =>
+                      deleteProject(project.id)
+                    }
+                  >
+                    Delete Project
+                  </button>
+
+                </div>
+
+              )}
+
             </div>
+
           ))}
+
         </div>
+
       )}
+
     </div>
   );
 }

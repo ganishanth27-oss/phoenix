@@ -29,10 +29,7 @@ function ManagerDashboard() {
         return;
       }
 
-      const {
-        data: profileData,
-        error: profileError,
-      } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("id, name, email, phone, role, status")
         .eq("id", user.id)
@@ -53,20 +50,18 @@ function ManagerDashboard() {
 
       setProfile(profileData);
 
-      const {
-        data: permissionData,
-        error: permissionError,
-      } = await supabase
-        .from("manager_permissions")
-        .select(`
-          permission_id,
-          permissions (
-            id,
-            name,
-            description
-          )
-        `)
-        .eq("manager_id", user.id);
+      const { data: permissionData, error: permissionError } =
+        await supabase
+          .from("manager_permissions")
+          .select(`
+            permission_id,
+            permissions (
+              id,
+              name,
+              description
+            )
+          `)
+          .eq("manager_id", user.id);
 
       if (permissionError) {
         throw permissionError;
@@ -78,7 +73,7 @@ function ManagerDashboard() {
 
       setPermissions(permissionNames);
     } catch (error) {
-      console.error(error);
+      console.error("Manager dashboard error:", error);
       alert(error.message);
     } finally {
       setLoading(false);
@@ -108,12 +103,10 @@ function ManagerDashboard() {
   return (
     <div className="manager-dashboard">
 
-      {/* ================= SIDEBAR ================= */}
-
+      {/* SIDEBAR */}
       <aside className="manager-sidebar">
 
         <div className="manager-brand">
-
           <div className="manager-logo">
             <img src={logo} alt="PHOENIX Logo" />
           </div>
@@ -122,7 +115,6 @@ function ManagerDashboard() {
             <h2>PHOENIX</h2>
             <span>Manager Portal</span>
           </div>
-
         </div>
 
         <div className="manager-sidebar-label">
@@ -131,6 +123,7 @@ function ManagerDashboard() {
 
         <nav className="manager-nav">
 
+          {/* Dashboard is always available */}
           <button
             className="manager-nav-item active"
             onClick={() => navigate("/manager")}
@@ -208,7 +201,6 @@ function ManagerDashboard() {
         <div className="manager-sidebar-bottom">
 
           <div className="manager-mini-profile">
-
             <div className="manager-mini-avatar">
               {profile?.name
                 ? profile.name.charAt(0).toUpperCase()
@@ -224,7 +216,6 @@ function ManagerDashboard() {
                 Manager
               </span>
             </div>
-
           </div>
 
           <button
@@ -239,16 +230,13 @@ function ManagerDashboard() {
 
       </aside>
 
-      {/* ================= MAIN ================= */}
-
+      {/* MAIN */}
       <main className="manager-main">
 
         {/* TOPBAR */}
-
         <header className="manager-topbar">
 
           <div>
-
             <div className="manager-breadcrumb">
               PHOENIX <span>/</span> Manager Dashboard
             </div>
@@ -260,7 +248,6 @@ function ManagerDashboard() {
             <p>
               Manage your assigned workspace and keep your team moving.
             </p>
-
           </div>
 
           <div className="manager-topbar-right">
@@ -268,7 +255,7 @@ function ManagerDashboard() {
             <button
               className="manager-refresh"
               onClick={loadManagerData}
-              title="Refresh"
+              title="Refresh permissions"
             >
               ↻
             </button>
@@ -297,8 +284,7 @@ function ManagerDashboard() {
 
         </header>
 
-        {/* ================= STATS ================= */}
-
+        {/* STATS */}
         <section className="manager-stats">
 
           <div className="manager-stat-card">
@@ -389,8 +375,7 @@ function ManagerDashboard() {
 
         </section>
 
-        {/* ================= WELCOME ================= */}
-
+        {/* WELCOME */}
         <section className="manager-welcome">
 
           <div className="manager-welcome-content">
@@ -428,6 +413,15 @@ function ManagerDashboard() {
                 </button>
               )}
 
+              {hasPermission("view_users") && (
+                <button
+                  onClick={() => navigate("/manager/users")}
+                >
+                  View Users
+                  <span>→</span>
+                </button>
+              )}
+
             </div>
 
           </div>
@@ -438,8 +432,7 @@ function ManagerDashboard() {
 
         </section>
 
-        {/* ================= ACCESS ================= */}
-
+        {/* ACCESS CONTROL */}
         <section className="manager-permissions-card">
 
           <div className="manager-section-header">
