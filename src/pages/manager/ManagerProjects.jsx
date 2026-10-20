@@ -20,6 +20,8 @@ function ManagerProjects() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const [formError, setFormError] = useState("");
+
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -145,6 +147,7 @@ function ManagerProjects() {
       priority: "medium",
       status: "not_started",
     });
+    setFormError("");
   };
 
   const openCreateForm = () => {
@@ -153,6 +156,7 @@ function ManagerProjects() {
       return;
     }
 
+    setFormError("");
     setShowCreateForm(true);
   };
 
@@ -172,7 +176,7 @@ function ManagerProjects() {
     }
 
     if (!form.name.trim()) {
-      alert("Please enter a project name.");
+      setFormError("Please enter a project name.");
       return;
     }
 
@@ -181,10 +185,11 @@ function ManagerProjects() {
       form.due_date &&
       form.due_date < form.start_date
     ) {
-      alert("Due date cannot be before the start date.");
+      setFormError("Due date cannot be before the start date.");
       return;
     }
 
+    setFormError("");
     setCreating(true);
 
     try {
@@ -281,7 +286,8 @@ function ManagerProjects() {
       alert("Project created successfully.");
     } catch (error) {
       console.error("Project creation error:", error);
-      alert(error.message);
+      setFormError(error.message || "Failed to create project.");
+      alert(error.message || "Failed to create project.");
     } finally {
       setCreating(false);
     }
