@@ -49,7 +49,7 @@
 .dashboard-eyebrow {
   display: inline-block;
   margin-bottom: 8px;
-  color: #6d5dfc;
+  color: #2563eb;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 1.4px;
@@ -85,8 +85,8 @@
 }
 
 .refresh-dashboard-btn:hover {
-  border-color: #6d5dfc;
-  color: #6d5dfc;
+  border-color: #2563eb;
+  color: #2563eb;
   transform: translateY(-1px);
 }
 
@@ -109,7 +109,7 @@
   border: 1px solid #e9e9f0;
   border-radius: 20px;
   background: #fff;
-  box-shadow: 0 8px 28px rgba(24, 24, 40, 0.04);
+  box-shadow: 0 4px 16px rgba(24, 24, 40, 0.04);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
@@ -121,12 +121,12 @@
   width: 130px;
   height: 130px;
   border-radius: 50%;
-  background: rgba(109, 93, 252, 0.06);
+  background: rgba(37, 99, 235, 0.05);
 }
 
 .admin-stat-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 14px 35px rgba(24, 24, 40, 0.08);
+  box-shadow: 0 10px 28px rgba(24, 24, 40, 0.07);
 }
 
 .stat-card-top {
@@ -155,8 +155,8 @@
 }
 
 .purple-card .stat-icon {
-  background: #eeebff;
-  color: #6d5dfc;
+  background: #eff6ff;
+  color: #2563eb;
 }
 
 .blue-card .stat-icon {

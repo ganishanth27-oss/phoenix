@@ -123,6 +123,11 @@ function AdminDashboard() {
           icon: "◈",
         },
         {
+          label: "Project Submissions",
+          path: "/admin/submissions",
+          icon: "📥",
+        },
+        {
           label: "Tasks",
           path: "/admin/tasks",
           icon: "✓",

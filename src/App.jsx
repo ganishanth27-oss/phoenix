@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 // ==================== SPLASH SCREEN ====================
 import SplashScreen from "./components/SplashScreen";
 
+// ==================== HOME / CUSTOMER PORTAL ====================
+import Home from "./pages/Home";
+
 // ==================== AUTH ====================
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -20,12 +23,14 @@ import AdminFiles from "./pages/admin/AdminFiles";
 import ManagerPermissions from "./pages/admin/ManagerPermissions";
 import ActivityLogs from "./pages/admin/ActivityLogs";
 import Settings from "./pages/admin/Settings";
+import AdminSubmissions from "./pages/admin/AdminSubmissions";
 
 // ==================== MANAGER ====================
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import ManagerRequests from "./pages/manager/ManagerRequests";
 import ManagerUsers from "./pages/manager/ManagerUsers";
 import ManagerProjects from "./pages/manager/ManagerProjects";
+import ManagerSubmitProject from "./pages/manager/ManagerSubmitProject";
 import ManagerTasks from "./pages/manager/ManagerTasks";
 import ManagerFiles from "./pages/manager/ManagerFiles";
 import ManagerReviewWork from "./pages/manager/ManagerReviewWork";
@@ -78,11 +83,16 @@ function App() {
           <Routes>
 
             {/* =====================================================
-                AUTH
+                PUBLIC / CUSTOMER LANDING & AUTH
             ===================================================== */}
 
             <Route
               path="/"
+              element={<Home />}
+            />
+
+            <Route
+              path="/login"
               element={<Login />}
             />
 
@@ -146,6 +156,15 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <Projects />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/submissions"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminSubmissions />
                 </ProtectedRoute>
               }
             />
@@ -238,6 +257,15 @@ function App() {
                   <ManagerPermissionRoute permission="view_projects">
                     <ManagerProjects />
                   </ManagerPermissionRoute>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/manager/submit-project"
+              element={
+                <ProtectedRoute allowedRoles={["manager"]}>
+                  <ManagerSubmitProject />
                 </ProtectedRoute>
               }
             />

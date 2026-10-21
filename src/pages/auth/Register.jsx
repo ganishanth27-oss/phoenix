@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import phoenixLogo from "../../assets/phoenix-logo.png";
 import "./Register.css";
 
 function Register() {
@@ -14,40 +15,32 @@ function Register() {
     confirmPassword: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-
-    setForm((previous) => ({
-      ...previous,
+    setForm((prev) => ({
+      ...prev,
       [name]: value,
     }));
-
     setError("");
   };
 
   const handleRegister = async (event) => {
     event.preventDefault();
-
     setError("");
     setSuccess("");
 
-    if (
-      !form.name.trim() ||
-      !form.email.trim() ||
-      !form.password
-    ) {
+    if (!form.name.trim() || !form.email.trim() || !form.password) {
       setError("Please fill in all required fields.");
       return;
     }
 
     if (form.password.length < 6) {
-      setError(
-        "Password must contain at least 6 characters."
-      );
+      setError("Password must contain at least 6 characters.");
       return;
     }
 
@@ -59,10 +52,7 @@ function Register() {
     setLoading(true);
 
     try {
-      const {
-        data,
-        error: authError,
-      } = await supabase.auth.signUp({
+      const { data, error: authError } = await supabase.auth.signUp({
         email: form.email.trim(),
         password: form.password,
         options: {
@@ -78,15 +68,10 @@ function Register() {
       }
 
       if (!data.user) {
-        throw new Error(
-          "Registration failed. Please try again."
-        );
+        throw new Error("Registration could not be completed. Please try again.");
       }
 
-      setSuccess(
-        "Account created successfully. You can now sign in."
-      );
-
+      setSuccess("Account registered successfully! Redirecting you to sign in...");
       setForm({
         name: "",
         email: "",
@@ -97,17 +82,10 @@ function Register() {
 
       setTimeout(() => {
         navigate("/");
-      }, 1800);
+      }, 1500);
     } catch (registerError) {
-      console.error(
-        "Registration error:",
-        registerError
-      );
-
-      setError(
-        registerError.message ||
-          "Unable to create your account."
-      );
+      console.error("Registration error:", registerError);
+      setError(registerError.message || "Unable to create your account.");
     } finally {
       setLoading(false);
     }
@@ -115,261 +93,167 @@ function Register() {
 
   return (
     <main className="register-page">
-
       {/* =====================================================
-          LEFT BRAND SECTION
+          LEFT BRAND HERO PANEL
       ===================================================== */}
-
       <section className="register-brand">
+        <div className="register-brand-top">
+          <Link to="/" className="register-brand-identity">
+            <div className="register-logo-badge">
+              <img src={phoenixLogo} alt="Phoenix" className="register-logo" />
+            </div>
+            <div className="register-brand-meta">
+              <span className="brand-name">PHOENIX</span>
+              <span className="brand-tag">Client Registration</span>
+            </div>
+          </Link>
+        </div>
 
         <div className="register-brand-content">
-
-          <div className="register-logo-wrap">
-            <img
-              src="/src/assets/phoenix-logo.png"
-              alt="PHOENIX"
-              className="register-logo"
-            />
+          <div className="register-pill-badge">
+            <span className="pill-dot" />
+            <span>Join 100+ Enterprise Teams</span>
           </div>
 
-          <p className="register-eyebrow">
-            JOIN PHOENIX
-          </p>
-
           <h1>
-            Build better.
-            <span> Work smarter.</span>
+            Transforming IT & Creative
+            <br />
+            <span>Service Delivery.</span>
           </h1>
 
           <p className="register-brand-description">
-            Create your PHOENIX account and get
-            access to a connected workspace for
-            projects, requests and team collaboration.
+            Create an account to submit service requests, track active deliverables, review design blueprints, and communicate with your dedicated project team.
           </p>
 
-          <div className="register-steps">
-
-            <div className="register-step">
-
-              <div className="register-step-number">
-                01
+          <div className="register-steps-timeline">
+            <div className="timeline-item">
+              <div className="step-num">01</div>
+              <div className="step-text">
+                <strong>Create your profile</strong>
+                <span>Instant sign-up with role-based dashboard access</span>
               </div>
-
-              <div>
-                <strong>
-                  Create your account
-                </strong>
-
-                <span>
-                  Set up your basic profile.
-                </span>
-              </div>
-
             </div>
 
-            <div className="register-step">
-
-              <div className="register-step-number">
-                02
+            <div className="timeline-item">
+              <div className="step-num">02</div>
+              <div className="step-text">
+                <strong>Submit service requests</strong>
+                <span>Web, apps, 3D design, construction drafting & more</span>
               </div>
-
-              <div>
-                <strong>
-                  Submit your requests
-                </strong>
-
-                <span>
-                  Tell your team what you need.
-                </span>
-              </div>
-
             </div>
 
-            <div className="register-step">
-
-              <div className="register-step-number">
-                03
+            <div className="timeline-item">
+              <div className="step-num">03</div>
+              <div className="step-text">
+                <strong>Real-time delivery tracking</strong>
+                <span>Milestone updates, file vaults and verified quality</span>
               </div>
-
-              <div>
-                <strong>
-                  Track your work
-                </strong>
-
-                <span>
-                  Follow projects from start to finish.
-                </span>
-              </div>
-
             </div>
-
           </div>
-
         </div>
 
         <div className="register-brand-footer">
-          © {new Date().getFullYear()} PHOENIX
+          <span>© {new Date().getFullYear()} Phoenix Solutions Inc.</span>
+          <span>Enterprise Workspace</span>
         </div>
-
       </section>
 
       {/* =====================================================
-          REGISTER FORM
+          RIGHT REGISTRATION FORM
       ===================================================== */}
-
       <section className="register-form-section">
-
-        <div className="register-mobile-logo">
-
-          <img
-            src="/src/assets/phoenix-logo.png"
-            alt="PHOENIX"
-          />
-
-          <span>
-            PHOENIX
-          </span>
-
-        </div>
-
         <div className="register-card">
-
           <div className="register-card-header">
-
-            <div className="register-welcome-icon">
-              ✨
+            <div className="register-icon-wrap">
+              <span>🚀</span>
             </div>
-
-            <div>
-              <h2>
-                Create your account
-              </h2>
-
-              <p>
-                Join your PHOENIX workspace.
-              </p>
-            </div>
-
+            <h2>Create an Account</h2>
+            <p>Get started with your Phoenix client workspace</p>
           </div>
 
           {error && (
-            <div className="register-message register-error">
-              <span>!</span>
+            <div className="register-alert error-alert" role="alert">
+              <span className="alert-symbol">⚠️</span>
               <p>{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="register-message register-success">
-              <span>✓</span>
+            <div className="register-alert success-alert" role="alert">
+              <span className="alert-symbol">✓</span>
               <p>{success}</p>
             </div>
           )}
 
-          <form
-            className="register-form"
-            onSubmit={handleRegister}
-          >
-
-            {/* NAME */}
-
-            <div className="register-field">
-
-              <label htmlFor="name">
-                Full name *
-              </label>
-
+          <form className="register-form" onSubmit={handleRegister}>
+            <div className="form-group">
+              <label htmlFor="name">Full Name *</label>
               <input
                 id="name"
                 name="name"
                 type="text"
-                placeholder="Enter your full name"
+                placeholder="e.g. Sarah Jenkins"
                 value={form.name}
                 onChange={handleChange}
                 autoComplete="name"
                 disabled={loading}
                 required
               />
-
             </div>
 
-            {/* EMAIL */}
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="email">Work Email *</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="sarah@company.com"
+                  value={form.email}
+                  onChange={handleChange}
+                  autoComplete="email"
+                  disabled={loading}
+                  required
+                />
+              </div>
 
-            <div className="register-field">
-
-              <label htmlFor="email">
-                Email address *
-              </label>
-
-              <input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@company.com"
-                value={form.email}
-                onChange={handleChange}
-                autoComplete="email"
-                disabled={loading}
-                required
-              />
-
+              <div className="form-group">
+                <label htmlFor="phone">Phone (Optional)</label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={form.phone}
+                  onChange={handleChange}
+                  autoComplete="tel"
+                  disabled={loading}
+                />
+              </div>
             </div>
 
-            {/* PHONE */}
-
-            <div className="register-field">
-
-              <label htmlFor="phone">
-                Phone number
-              </label>
-
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                placeholder="Enter your phone number"
-                value={form.phone}
-                onChange={handleChange}
-                autoComplete="tel"
-                disabled={loading}
-              />
-
-            </div>
-
-            {/* PASSWORD ROW */}
-
-            <div className="register-password-grid">
-
-              <div className="register-field">
-
-                <label htmlFor="password">
-                  Password *
-                </label>
-
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="password">Password *</label>
                 <input
                   id="password"
                   name="password"
-                  type="password"
-                  placeholder="Minimum 6 characters"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Min. 6 characters"
                   value={form.password}
                   onChange={handleChange}
                   autoComplete="new-password"
                   disabled={loading}
                   required
                 />
-
               </div>
 
-              <div className="register-field">
-
-                <label htmlFor="confirmPassword">
-                  Confirm password *
-                </label>
-
+              <div className="form-group">
+                <label htmlFor="confirmPassword">Confirm Password *</label>
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Repeat password"
                   value={form.confirmPassword}
                   onChange={handleChange}
@@ -377,53 +261,52 @@ function Register() {
                   disabled={loading}
                   required
                 />
-
               </div>
-
             </div>
 
-            {/* SUBMIT */}
+            <div className="show-password-checkbox">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(e) => setShowPassword(e.target.checked)}
+                />
+                <span>Show passwords</span>
+              </label>
+            </div>
 
             <button
               type="submit"
-              className="register-submit"
+              className="register-submit-btn"
               disabled={loading}
             >
               {loading ? (
                 <>
                   <span className="register-spinner" />
-                  Creating account...
+                  <span>Creating Account...</span>
                 </>
               ) : (
                 <>
-                  Create account
-                  <span>→</span>
+                  <span>Complete Registration</span>
+                  <span className="btn-arrow">→</span>
                 </>
               )}
             </button>
-
           </form>
 
           <div className="register-divider">
             <span>Already have an account?</span>
           </div>
 
-          <Link
-            to="/"
-            className="register-login-button"
-          >
-            Back to sign in
+          <Link to="/" className="login-redirect-btn">
+            Sign In to Existing Account
           </Link>
 
-          <p className="register-security">
-            🔒 Your information is protected with secure
-            authentication.
+          <p className="register-security-note">
+            🔒 By registering, your information is protected with industry-standard encryption.
           </p>
-
         </div>
-
       </section>
-
     </main>
   );
 }

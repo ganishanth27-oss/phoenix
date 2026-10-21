@@ -6,7 +6,7 @@ import "./DashboardLayout.css";
 
 function DashboardLayout({
   children,
-  profile,
+  profile: initialProfile,
   navigation = [],
   title = "Dashboard",
 }) {
@@ -14,16 +14,42 @@ function DashboardLayout({
 
   const [mobileMenu, setMobileMenu] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [currentProfile, setCurrentProfile] = useState(initialProfile || null);
+
+  useEffect(() => {
+    if (initialProfile) {
+      setCurrentProfile(initialProfile);
+    } else {
+      // Auto-load profile if not provided by caller
+      const fetchSessionUser = async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data } = await supabase
+              .from("profiles")
+              .select("id, name, email, role, status")
+              .eq("id", user.id)
+              .single();
+            if (data) {
+              setCurrentProfile(data);
+            }
+          }
+        } catch (e) {
+          console.error("DashboardLayout profile load error:", e);
+        }
+      };
+      fetchSessionUser();
+    }
+  }, [initialProfile]);
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 900) {
+      if (window.innerWidth > 960) {
         setMobileMenu(false);
       }
     };
 
     window.addEventListener("resize", handleResize);
-
     return () => {
       window.removeEventListener("resize", handleResize);
     };
@@ -51,11 +77,11 @@ function DashboardLayout({
   };
 
   const getInitials = () => {
-    if (!profile?.name) {
+    if (!currentProfile?.name) {
       return "P";
     }
 
-    return profile.name
+    return currentProfile.name
       .split(" ")
       .filter(Boolean)
       .slice(0, 2)
@@ -64,23 +90,19 @@ function DashboardLayout({
   };
 
   const getRoleName = () => {
-    if (!profile?.role) {
+    if (!currentProfile?.role) {
       return "User";
     }
 
     return (
-      profile.role.charAt(0).toUpperCase() +
-      profile.role.slice(1)
+      currentProfile.role.charAt(0).toUpperCase() +
+      currentProfile.role.slice(1)
     );
   };
 
   return (
     <div className="dashboard-layout">
-
-      {/* =====================================================
-          MOBILE OVERLAY
-      ===================================================== */}
-
+      {/* Mobile Backdrop */}
       {mobileMenu && (
         <button
           className="dashboard-mobile-overlay"
@@ -89,23 +111,20 @@ function DashboardLayout({
         />
       )}
 
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
-
+      {/* Sidebar */}
       <aside
         className={`dashboard-sidebar ${
           mobileMenu ? "dashboard-sidebar-open" : ""
         }`}
       >
-
-        {/* SIDEBAR BRAND - TEXT ONLY */}
-
+        {/* Sidebar Brand */}
         <div className="dashboard-sidebar-logo">
-
+          <div className="dashboard-logo-badge">
+            <img src={phoenixLogo} alt="Phoenix" className="dashboard-brand-img" />
+          </div>
           <div className="dashboard-logo-text">
             <strong>PHOENIX</strong>
-            <span>WORKSPACE</span>
+            <span>ENTERPRISE PORTAL</span>
           </div>
 
           <button
@@ -115,20 +134,49 @@ function DashboardLayout({
           >
             ×
           </button>
-
         </div>
 
-        {/* =================================================
-            NAVIGATION
-        ================================================= */}
-
+        {/* Navigation list - supports flat array or grouped items */}
         <nav className="dashboard-navigation">
-
-          <div className="dashboard-nav-label">
-            WORKSPACE
-          </div>
-
-          {navigation.map((item) => {
+          {navigation.map((item, idx) => {
+            // Group header with sub-items
+            if (item.items && Array.isArray(item.items)) {
+              return (
+                <div key={item.label || idx} className="dashboard-nav-group">
+                  <div className="dashboard-nav-label">
+                    {item.label}
+                  </div>
+                  {item.items.map((subItem) => {
+                    if (subItem.hidden) return null;
+                    return (
+                      <NavLink
+                        key={subItem.path || subItem.label}
+                        to={subItem.path}
+                        end={subItem.end}
+                        onClick={closeMobileMenu}
+                        className={({ isActive }) =>
+                          `dashboard-nav-item ${
+                            isActive ? "dashboard-nav-item-active" : ""
+                          }`
+                        }
+                      >
+                        <span className="dashboard-nav-icon">
+                          {subItem.icon || "•"}
+                        </span>
+                        <span className="dashboard-nav-text">
+                          {subItem.label}
+                        </span>
+                        {subItem.badge && (
+                          <span className="dashboard-nav-badge">
+                            {subItem.badge}
+                          </span>
+                        )}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              );
+            }
 
             if (item.hidden) {
               return null;
@@ -142,183 +190,105 @@ function DashboardLayout({
                 onClick={closeMobileMenu}
                 className={({ isActive }) =>
                   `dashboard-nav-item ${
-                    isActive
-                      ? "dashboard-nav-item-active"
-                      : ""
+                    isActive ? "dashboard-nav-item-active" : ""
                   }`
                 }
               >
-
                 <span className="dashboard-nav-icon">
                   {item.icon || "•"}
                 </span>
-
                 <span className="dashboard-nav-text">
                   {item.label}
                 </span>
-
                 {item.badge && (
                   <span className="dashboard-nav-badge">
                     {item.badge}
                   </span>
                 )}
-
               </NavLink>
             );
           })}
-
         </nav>
 
-        {/* =================================================
-            SIDEBAR PROFILE
-        ================================================= */}
-
+        {/* Sidebar Footer Profile */}
         <div className="dashboard-sidebar-bottom">
-
           <div className="dashboard-profile">
-
             <div className="dashboard-avatar">
               {getInitials()}
             </div>
-
             <div className="dashboard-profile-info">
-
               <strong>
-                {profile?.name || "PHOENIX User"}
+                {currentProfile?.name || "Phoenix User"}
               </strong>
-
               <span>
-                {getRoleName()}
+                {getRoleName()} • {currentProfile?.email ? currentProfile.email.split("@")[0] : "Active"}
               </span>
-
             </div>
-
           </div>
-
-          {/* SIGN OUT */}
 
           <button
             className="dashboard-logout"
             onClick={handleLogout}
             disabled={loggingOut}
+            title="Sign out of your session"
           >
-
-            <span>↪</span>
-
-            {loggingOut
-              ? "Signing out..."
-              : "Sign out"}
-
+            <span className="logout-icon">↪</span>
+            <span>{loggingOut ? "Signing out..." : "Sign out"}</span>
           </button>
-
         </div>
-
       </aside>
 
-      {/* =====================================================
-          MAIN AREA
-      ===================================================== */}
-
+      {/* Main Content Area */}
       <div className="dashboard-main">
-
-        {/* =================================================
-            TOP BAR
-        ================================================= */}
-
+        {/* Top Header Bar */}
         <header className="dashboard-topbar">
-
           <div className="dashboard-topbar-left">
-
             <button
               className="dashboard-menu-button"
               onClick={() => setMobileMenu(true)}
-              aria-label="Open navigation"
+              aria-label="Open navigation menu"
             >
               <span />
               <span />
               <span />
             </button>
-
-            <div className="dashboard-mobile-title">
-              {title}
+            <div className="dashboard-page-breadcrumbs">
+              <span className="crumb-brand">Phoenix</span>
+              <span className="crumb-sep">/</span>
+              <span className="crumb-title">{title}</span>
             </div>
-
           </div>
 
-          {/* TOP RIGHT */}
-
           <div className="dashboard-topbar-right">
-
-            <button
-              className="dashboard-notification"
-              aria-label="Notifications"
-            >
-              <span>♢</span>
-              <i />
-            </button>
+            <div className="dashboard-system-badge">
+              <span className="system-dot" />
+              <span>Enterprise Services</span>
+            </div>
 
             <div className="dashboard-topbar-profile">
-
               <div className="dashboard-avatar dashboard-avatar-small">
                 {getInitials()}
               </div>
-
               <div className="dashboard-topbar-profile-text">
-
-                <strong>
-                  {profile?.name || "User"}
-                </strong>
-
-                <span>
-                  {getRoleName()}
-                </span>
-
+                <strong>{currentProfile?.name || "User"}</strong>
+                <span>{getRoleName()}</span>
               </div>
-
             </div>
-
           </div>
-
         </header>
 
-        {/* =================================================
-            CONTENT AREA
-        ================================================= */}
-
+        {/* Content View */}
         <main className="dashboard-content">
-
-          {/* =================================================
-              SINGLE PHOENIX CENTER WATERMARK
-
-              This is the ONLY dashboard logo image.
-
-              It is inside DashboardLayout, therefore it
-              appears automatically for:
-              - Admin
-              - Manager
-              - User
-          ================================================= */}
-
-          <div
-            className="dashboard-center-logo"
-            aria-hidden="true"
-          >
-            <img
-              src={phoenixLogo}
-              alt=""
-            />
+          {/* Subtle corporate watermark */}
+          <div className="dashboard-center-logo" aria-hidden="true">
+            <img src={phoenixLogo} alt="" />
           </div>
-
-          {/* ACTUAL PAGE CONTENT */}
 
           <div className="dashboard-page-content">
             {children}
           </div>
-
         </main>
-
       </div>
-
     </div>
   );
 }

@@ -706,6 +706,534 @@ app.post(
 );
 
 /* =========================
+   AUTHENTICATED USER HELPER
+========================= */
+
+const getAuthenticatedUser = async (req) => {
+  const authHeader =
+    req.headers.authorization;
+
+  if (
+    !authHeader ||
+    !authHeader.startsWith("Bearer ")
+  ) {
+    return {
+      error: "Authorization token is required.",
+    };
+  }
+
+  const accessToken = authHeader
+    .replace("Bearer ", "")
+    .trim();
+
+  if (!accessToken) {
+    return {
+      error: "Authorization token is required.",
+    };
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } =
+    await supabaseAdmin.auth.getUser(
+      accessToken
+    );
+
+  if (userError || !user) {
+    return {
+      error:
+        "Invalid or expired authentication token.",
+    };
+  }
+
+  const {
+    data: profile,
+    error: profileError,
+  } = await supabaseAdmin
+    .from("profiles")
+    .select(
+      "id, name, email, role, status"
+    )
+    .eq("id", user.id)
+    .single();
+
+  if (profileError || !profile) {
+    return {
+      error: "Profile not found.",
+    };
+  }
+
+  if (profile.status !== "active") {
+    return {
+      error: "Account is inactive.",
+    };
+  }
+
+  return {
+    user,
+    profile,
+  };
+};
+
+/* =========================
+   ADMIN: REVIEW SUBMISSION
+========================= */
+
+app.post(
+  "/api/admin/submissions/:id/review",
+  async (req, res) => {
+    try {
+      const adminCheck =
+        await getAdminFromRequest(req);
+
+      if (adminCheck.error) {
+        return res.status(401).json({
+          success: false,
+          message: adminCheck.error,
+        });
+      }
+
+      const { id } = req.params;
+      const {
+        action,
+        reason,
+        internal_notes,
+        is_published,
+      } = req.body;
+
+      const validActions = [
+        "set_under_review",
+        "request_changes",
+        "approve",
+        "reject",
+        "publish",
+        "unpublish",
+      ];
+
+      if (
+        !action ||
+        !validActions.includes(action)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid review action.",
+        });
+      }
+
+      /* Fetch current submission */
+      const {
+        data: submission,
+        error: fetchError,
+      } = await supabaseAdmin
+        .from("project_submissions")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (fetchError || !submission) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Submission not found.",
+        });
+      }
+
+      /* Determine new status */
+      const statusMap = {
+        set_under_review: "under_review",
+        request_changes:
+          "changes_requested",
+        approve: "approved",
+        reject: "rejected",
+        publish: submission.status,
+        unpublish: submission.status,
+      };
+
+      const newStatus =
+        statusMap[action];
+
+      const updateData = {
+        status: newStatus,
+        updated_at:
+          new Date().toISOString(),
+      };
+
+      /* Handle publish/unpublish */
+      if (action === "publish") {
+        if (
+          submission.status !== "approved"
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Only approved projects can be published.",
+          });
+        }
+        updateData.is_published = true;
+      }
+
+      if (action === "unpublish") {
+        updateData.is_published = false;
+      }
+
+      if (
+        typeof is_published === "boolean" &&
+        action === "approve"
+      ) {
+        updateData.is_published =
+          is_published;
+      }
+
+      /* Update submission */
+      const { error: updateError } =
+        await supabaseAdmin
+          .from("project_submissions")
+          .update(updateData)
+          .eq("id", id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      /* Create review record */
+      await supabaseAdmin
+        .from("submission_reviews")
+        .insert({
+          submission_id: id,
+          reviewer_id:
+            adminCheck.user.id,
+          action,
+          previous_status:
+            submission.status,
+          new_status: newStatus,
+          reason: reason || null,
+          internal_notes:
+            internal_notes || null,
+        });
+
+      /* Activity log */
+      await supabaseAdmin
+        .from("activity_logs")
+        .insert({
+          user_id:
+            adminCheck.user.id,
+          action:
+            `submission_${action}`,
+          description: `Admin ${action.replace("_", " ")} submission "${submission.title}" (ID: ${id})`,
+        });
+
+      return res.json({
+        success: true,
+        message: `Submission ${action.replace("_", " ")} successfully.`,
+      });
+    } catch (error) {
+      console.error(
+        "Review submission error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          error.message ||
+          "Internal server error.",
+      });
+    }
+  }
+);
+
+/* =========================
+   SIGNED URL FOR FILE
+   DOWNLOAD (authenticated)
+========================= */
+
+app.post(
+  "/api/files/signed-url",
+  async (req, res) => {
+    try {
+      const authCheck =
+        await getAuthenticatedUser(req);
+
+      if (authCheck.error) {
+        return res.status(401).json({
+          success: false,
+          message: authCheck.error,
+        });
+      }
+
+      const { file_path } = req.body;
+
+      if (!file_path) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "File path is required.",
+        });
+      }
+
+      const { profile } = authCheck;
+
+      /*
+        Admins can download any file.
+        Managers can only download files
+        in their own folder.
+      */
+      if (profile.role === "manager") {
+        const pathParts =
+          file_path.split("/");
+
+        if (
+          pathParts[0] !== profile.id
+        ) {
+          return res.status(403).json({
+            success: false,
+            message:
+              "Access denied to this file.",
+          });
+        }
+      } else if (
+        profile.role !== "admin"
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied.",
+        });
+      }
+
+      const {
+        data: signedUrlData,
+        error: signedUrlError,
+      } = await supabaseAdmin.storage
+        .from("project-files")
+        .createSignedUrl(
+          file_path,
+          300
+        );
+
+      if (signedUrlError) {
+        throw signedUrlError;
+      }
+
+      return res.json({
+        success: true,
+        signed_url:
+          signedUrlData.signedUrl,
+        expires_in: 300,
+      });
+    } catch (error) {
+      console.error(
+        "Signed URL error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          error.message ||
+          "Failed to generate download URL.",
+      });
+    }
+  }
+);
+
+/* =========================
+   PUBLIC: SUBMIT ENQUIRY
+========================= */
+
+app.post(
+  "/api/public/enquiry",
+  async (req, res) => {
+    try {
+      const {
+        name,
+        email,
+        phone,
+        company,
+        service_interest,
+        message,
+      } = req.body;
+
+      if (
+        !name?.trim() ||
+        !email?.trim() ||
+        !message?.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Name, email and message are required.",
+        });
+      }
+
+      /* Basic email validation */
+      const emailRegex =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (
+        !emailRegex.test(email.trim())
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please enter a valid email address.",
+        });
+      }
+
+      const {
+        data: enquiry,
+        error: enquiryError,
+      } = await supabaseAdmin
+        .from("contact_enquiries")
+        .insert({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone?.trim() || null,
+          company:
+            company?.trim() || null,
+          service_interest:
+            service_interest?.trim() ||
+            null,
+          message: message.trim(),
+        })
+        .select("id, created_at")
+        .single();
+
+      if (enquiryError) {
+        throw enquiryError;
+      }
+
+      return res.status(201).json({
+        success: true,
+        message:
+          "Your enquiry has been submitted. We will get back to you soon!",
+        enquiry_id: enquiry.id,
+      });
+    } catch (error) {
+      console.error(
+        "Enquiry error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Failed to submit enquiry. Please try again.",
+      });
+    }
+  }
+);
+
+/* =========================
+   PUBLIC: PORTFOLIO
+========================= */
+
+app.get(
+  "/api/public/portfolio",
+  async (req, res) => {
+    try {
+      const {
+        data: projects,
+        error: projectsError,
+      } = await supabaseAdmin
+        .from("project_submissions")
+        .select(`
+          id,
+          title,
+          description,
+          client_name,
+          service_id,
+          technologies,
+          start_date,
+          completion_date,
+          thumbnail_path,
+          created_at,
+          services:service_id (
+            id,
+            name
+          ),
+          manager:manager_id (
+            name
+          )
+        `)
+        .eq("status", "approved")
+        .eq("is_published", true)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (projectsError) {
+        throw projectsError;
+      }
+
+      /*
+        For each project, also fetch
+        public preview attachments.
+      */
+      const projectIds = (
+        projects || []
+      ).map((p) => p.id);
+
+      let attachments = [];
+
+      if (projectIds.length > 0) {
+        const {
+          data: attachData,
+          error: attachError,
+        } = await supabaseAdmin
+          .from("project_attachments")
+          .select(
+            "id, submission_id, file_name, content_type"
+          )
+          .in(
+            "submission_id",
+            projectIds
+          )
+          .eq(
+            "is_public_preview",
+            true
+          );
+
+        if (!attachError) {
+          attachments =
+            attachData || [];
+        }
+      }
+
+      /* Map attachments to projects */
+      const result = (
+        projects || []
+      ).map((project) => ({
+        ...project,
+        preview_images:
+          attachments.filter(
+            (a) =>
+              a.submission_id ===
+              project.id
+          ),
+      }));
+
+      return res.json({
+        success: true,
+        projects: result,
+      });
+    } catch (error) {
+      console.error(
+        "Portfolio error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Failed to load portfolio.",
+      });
+    }
+  }
+);
+
+/* =========================
    SERVER
 ========================= */
 

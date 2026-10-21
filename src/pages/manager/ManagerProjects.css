@@ -98,20 +98,21 @@
 }
 
 .manager-project-refresh:hover {
-  border-color: #c8c2ff;
-  color: #6d5dfc;
+  border-color: #cbd5e1;
+  color: #2563eb;
 }
 
 .create-project-button {
   border: none;
-  background: #6d5dfc;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(109, 93, 252, 0.2);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
 .create-project-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 11px 24px rgba(109, 93, 252, 0.28);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
 }
 
 .create-project-button span {
@@ -195,10 +196,10 @@
 .manager-create-project-card {
   margin-bottom: 28px;
   overflow: hidden;
-  border: 1px solid #e5e1ff;
+  border: 1px solid #e2e8f0;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 12px 35px rgba(109, 93, 252, 0.08);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
 }
 
 .manager-create-project-header {
@@ -208,14 +209,14 @@
   padding: 24px 26px;
   background: linear-gradient(
     135deg,
-    #f7f5ff,
+    #f8fafc,
     #ffffff
   );
-  border-bottom: 1px solid #eeeaff;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .manager-create-project-header span {
-  color: #6d5dfc;
+  color: #2563eb;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.1em;

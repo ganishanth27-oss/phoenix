@@ -1,69 +1,109 @@
 /* =========================================================
    PHOENIX — GLOBAL DESIGN SYSTEM
-   Modern Responsive SaaS UI
+   Modern, Corporate & Premium UI
 ========================================================= */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 
 /* =========================================================
-   ROOT VARIABLES
+   ROOT DESIGN TOKENS
+   Deep Navy, Slate Blue, Violet/Cyan Accents, Clean Surfaces
 ========================================================= */
 
 :root {
-  --phoenix-primary: #6d5dfc;
-  --phoenix-primary-dark: #5748e8;
-  --phoenix-primary-light: #eeecff;
+  /* Brand Navy & Indigo */
+  --phoenix-navy-950: #0a0f1d;
+  --phoenix-navy-900: #0f172a;
+  --phoenix-navy-800: #1e293b;
+  --phoenix-navy-700: #334155;
+  --phoenix-navy-600: #475569;
 
-  --phoenix-bg: #f6f7fb;
+  /* Primary Blue & Indigo */
+  --phoenix-primary: #2563eb;
+  --phoenix-primary-hover: #1d4ed8;
+  --phoenix-primary-dark: #1e40af;
+  --phoenix-primary-light: #eff6ff;
+  --phoenix-primary-glow: rgba(37, 99, 235, 0.15);
+
+  /* Modern Accents */
+  --phoenix-accent-cyan: #06b6d4;
+  --phoenix-accent-cyan-light: #ecfeff;
+  --phoenix-accent-violet: #6366f1;
+  --phoenix-accent-violet-light: #eef2ff;
+
+  /* Backgrounds & Clean Surfaces */
+  --phoenix-bg: #f8fafc;
+  --phoenix-bg-subtle: #f1f5f9;
   --phoenix-surface: #ffffff;
-  --phoenix-surface-soft: #fafbff;
+  --phoenix-surface-soft: #fbfcfe;
+  --phoenix-surface-elevated: #ffffff;
 
-  --phoenix-text: #111827;
-  --phoenix-text-secondary: #667085;
-  --phoenix-text-muted: #98a2b3;
+  /* Typography Colors */
+  --phoenix-text: #0f172a;
+  --phoenix-text-secondary: #475569;
+  --phoenix-text-muted: #64748b;
+  --phoenix-text-dim: #94a3b8;
+  --phoenix-text-inverse: #ffffff;
 
-  --phoenix-border: #e7e9f0;
+  /* Borders & Dividers */
+  --phoenix-border: #e2e8f0;
+  --phoenix-border-subtle: #edf2f7;
+  --phoenix-border-strong: #cbd5e1;
+  --phoenix-border-focus: #3b82f6;
 
-  --phoenix-success: #12b76a;
-  --phoenix-warning: #f79009;
-  --phoenix-danger: #f04438;
-  --phoenix-info: #2e90fa;
+  /* Feedback Semantics */
+  --phoenix-success: #10b981;
+  --phoenix-success-light: #ecfdf5;
+  --phoenix-success-text: #047857;
 
+  --phoenix-warning: #f59e0b;
+  --phoenix-warning-light: #fffbeb;
+  --phoenix-warning-text: #b45309;
+
+  --phoenix-danger: #ef4444;
+  --phoenix-danger-light: #fef2f2;
+  --phoenix-danger-text: #b91c1c;
+
+  --phoenix-info: #0284c7;
+  --phoenix-info-light: #f0f9ff;
+  --phoenix-info-text: #0369a1;
+
+  /* Rounded Corners */
+  --phoenix-radius-xs: 6px;
   --phoenix-radius-sm: 8px;
   --phoenix-radius-md: 12px;
-  --phoenix-radius-lg: 18px;
-  --phoenix-radius-xl: 24px;
+  --phoenix-radius-lg: 16px;
+  --phoenix-radius-xl: 20px;
+  --phoenix-radius-2xl: 24px;
+  --phoenix-radius-full: 9999px;
 
-  --phoenix-shadow-sm:
-    0 2px 8px rgba(16, 24, 40, 0.04);
+  /* Soft Corporate Shadows */
+  --phoenix-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --phoenix-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --phoenix-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.05), 0 2px 4px rgba(15, 23, 42, 0.03);
+  --phoenix-shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.07), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+  --phoenix-shadow-xl: 0 20px 35px -5px rgba(15, 23, 42, 0.09), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  --phoenix-shadow-glow: 0 0 0 1px rgba(37, 99, 235, 0.1), 0 8px 24px rgba(37, 99, 235, 0.12);
 
-  --phoenix-shadow-md:
-    0 8px 24px rgba(16, 24, 40, 0.06);
-
-  --phoenix-shadow-lg:
-    0 16px 40px rgba(16, 24, 40, 0.08);
-
-  font-family:
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
+  /* Typography Stacks */
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--phoenix-text);
   background: var(--phoenix-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* =========================================================
-   RESET
+   RESET & BASE STYLES
 ========================================================= */
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
@@ -74,26 +114,24 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-
   background: var(--phoenix-bg);
   color: var(--phoenix-text);
-
-  font-family:
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+  font-size: 14px;
 }
 
 button,
 input,
 textarea,
 select {
-  font: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 button {
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -112,22 +150,16 @@ img {
   display: block;
 }
 
-/* =========================================================
-   SELECTION
-========================================================= */
-
+/* Selection */
 ::selection {
-  background: var(--phoenix-primary);
+  background: #2563eb;
   color: #ffffff;
 }
 
-/* =========================================================
-   SCROLLBAR
-========================================================= */
-
+/* Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -135,127 +167,137 @@ img {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d0d5dd;
-  border-radius: 999px;
+  background: #cbd5e1;
+  border-radius: var(--phoenix-radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #98a2b3;
+  background: #94a3b8;
 }
 
 /* =========================================================
-   COMMON PAGE
+   TYPOGRAPHY UTILITIES
 ========================================================= */
 
-.phoenix-page {
-  width: 100%;
-  min-height: 100vh;
-  background: var(--phoenix-bg);
-}
-
-.phoenix-container {
-  width: min(100% - 40px, 1440px);
-  margin: 0 auto;
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--phoenix-text);
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 /* =========================================================
-   COMMON CARD
+   COMMON UI SYSTEM: CARDS, BUTTONS, BADGES, INPUTS
 ========================================================= */
 
 .phoenix-card {
   background: var(--phoenix-surface);
   border: 1px solid var(--phoenix-border);
   border-radius: var(--phoenix-radius-lg);
-  box-shadow: var(--phoenix-shadow-sm);
+  box-shadow: var(--phoenix-shadow-xs);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-/* =========================================================
-   COMMON BUTTONS
-========================================================= */
+.phoenix-card-interactive:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--phoenix-shadow-md);
+  transform: translateY(-2px);
+}
 
+/* Premium Buttons */
 .phoenix-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-
-  min-height: 42px;
+  min-height: 40px;
   padding: 0 16px;
-
   border: 1px solid transparent;
   border-radius: var(--phoenix-radius-md);
-
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-
   cursor: pointer;
-
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    background 0.18s ease,
-    border-color 0.18s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
 }
 
 .phoenix-btn:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-.phoenix-btn-primary {
-  background: var(--phoenix-primary);
-  color: #ffffff;
+.phoenix-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
 
-  box-shadow:
-    0 5px 14px rgba(109, 93, 252, 0.22);
+.phoenix-btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25), 0 1px 2px rgba(37, 99, 235, 0.15);
 }
 
 .phoenix-btn-primary:hover:not(:disabled) {
-  background: var(--phoenix-primary-dark);
-  box-shadow:
-    0 8px 20px rgba(109, 93, 252, 0.28);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
 }
 
 .phoenix-btn-secondary {
   background: #ffffff;
   color: var(--phoenix-text);
   border-color: var(--phoenix-border);
+  box-shadow: var(--phoenix-shadow-xs);
 }
 
 .phoenix-btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--phoenix-bg-subtle);
+  border-color: var(--phoenix-border-strong);
 }
 
-/* =========================================================
-   COMMON INPUTS
-========================================================= */
+.phoenix-btn-outline {
+  background: transparent;
+  color: var(--phoenix-primary);
+  border-color: rgba(37, 99, 235, 0.35);
+}
 
+.phoenix-btn-outline:hover:not(:disabled) {
+  background: var(--phoenix-primary-light);
+  border-color: var(--phoenix-primary);
+}
+
+.phoenix-btn-danger {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25);
+}
+
+.phoenix-btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.3);
+}
+
+/* Form Inputs */
 .phoenix-input,
 .phoenix-select,
 .phoenix-textarea {
   width: 100%;
-
   border: 1px solid var(--phoenix-border);
   border-radius: var(--phoenix-radius-md);
-
   background: #ffffff;
   color: var(--phoenix-text);
-
   outline: none;
-
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+  font-size: 14px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .phoenix-input,
 .phoenix-select {
-  min-height: 44px;
-  padding: 0 13px;
+  height: 42px;
+  padding: 0 14px;
 }
 
 .phoenix-textarea {
-  min-height: 110px;
-  padding: 12px 13px;
+  min-height: 100px;
+  padding: 10px 14px;
   resize: vertical;
 }
 
@@ -263,161 +305,126 @@ img {
 .phoenix-select:focus,
 .phoenix-textarea:focus {
   border-color: var(--phoenix-primary);
-
-  box-shadow:
-    0 0 0 3px rgba(109, 93, 252, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
-/* =========================================================
-   FORM LABEL
-========================================================= */
+.phoenix-input::placeholder,
+.phoenix-textarea::placeholder {
+  color: var(--phoenix-text-dim);
+}
 
 .phoenix-label {
   display: block;
-
-  margin-bottom: 7px;
-
-  color: #344054;
-
+  margin-bottom: 6px;
+  color: var(--phoenix-navy-700);
   font-size: 13px;
   font-weight: 600;
 }
 
-/* =========================================================
-   BADGES
-========================================================= */
-
+/* Badges */
 .phoenix-badge {
   display: inline-flex;
   align-items: center;
-
-  min-height: 28px;
-  padding: 0 10px;
-
-  border-radius: 999px;
-
-  font-size: 12px;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--phoenix-radius-full);
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.phoenix-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .phoenix-badge-success {
-  background: #ecfdf3;
-  color: #027a48;
+  background: var(--phoenix-success-light);
+  color: var(--phoenix-success-text);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .phoenix-badge-warning {
-  background: #fffaeb;
-  color: #b54708;
+  background: var(--phoenix-warning-light);
+  color: var(--phoenix-warning-text);
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .phoenix-badge-danger {
-  background: #fef3f2;
-  color: #b42318;
+  background: var(--phoenix-danger-light);
+  color: var(--phoenix-danger-text);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .phoenix-badge-info {
-  background: #eff8ff;
-  color: #175cd3;
+  background: var(--phoenix-info-light);
+  color: var(--phoenix-info-text);
+  border: 1px solid rgba(2, 132, 199, 0.2);
 }
 
 .phoenix-badge-neutral {
-  background: #f2f4f7;
-  color: #475467;
-}
-
-/* =========================================================
-   PAGE HEADER
-========================================================= */
-
-.phoenix-page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-
-  margin-bottom: 28px;
-}
-
-.phoenix-page-title {
-  margin: 0;
-
-  color: var(--phoenix-text);
-
-  font-size: clamp(24px, 3vw, 32px);
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.phoenix-page-description {
-  margin: 8px 0 0;
-
+  background: var(--phoenix-bg-subtle);
   color: var(--phoenix-text-secondary);
-
-  font-size: 14px;
-  line-height: 1.6;
+  border: 1px solid var(--phoenix-border);
 }
 
-/* =========================================================
-   STAT CARDS
-========================================================= */
-
-.phoenix-stats-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 16px;
+.phoenix-badge-primary {
+  background: var(--phoenix-primary-light);
+  color: var(--phoenix-primary);
+  border: 1px solid rgba(37, 99, 235, 0.2);
 }
 
-.phoenix-stat-card {
-  padding: 20px;
-
+/* Tables */
+.phoenix-table-container {
   background: #ffffff;
-
   border: 1px solid var(--phoenix-border);
   border-radius: var(--phoenix-radius-lg);
-
-  box-shadow: var(--phoenix-shadow-sm);
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  overflow: hidden;
+  box-shadow: var(--phoenix-shadow-xs);
 }
 
-.phoenix-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--phoenix-shadow-md);
-}
-
-.phoenix-stat-label {
-  color: var(--phoenix-text-secondary);
-
+.phoenix-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
+  text-align: left;
+}
+
+.phoenix-table th {
+  background: #f8fafc;
+  color: var(--phoenix-navy-600);
   font-weight: 600;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--phoenix-border);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.phoenix-stat-value {
-  margin-top: 8px;
-
+.phoenix-table td {
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--phoenix-border-subtle);
   color: var(--phoenix-text);
-
-  font-size: 28px;
-  font-weight: 800;
+  vertical-align: middle;
 }
 
-/* =========================================================
-   EMPTY STATE
-========================================================= */
+.phoenix-table tr:last-child td {
+  border-bottom: none;
+}
 
+.phoenix-table tr:hover td {
+  background: #f8fafc;
+}
+
+/* Empty States */
 .phoenix-empty {
-  padding: 50px 24px;
-
+  padding: 48px 24px;
   text-align: center;
-
   background: #ffffff;
-
   border: 1px dashed var(--phoenix-border);
   border-radius: var(--phoenix-radius-lg);
 }
@@ -425,99 +432,27 @@ img {
 .phoenix-empty-icon {
   width: 52px;
   height: 52px;
-
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  background: var(--phoenix-primary-light);
+  color: var(--phoenix-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-
-  margin: 0 auto 14px;
-
-  border-radius: 16px;
-
-  background: var(--phoenix-primary-light);
-
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .phoenix-empty-title {
-  margin: 0;
-
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
+  color: var(--phoenix-text);
+  margin-bottom: 6px;
 }
 
-.phoenix-empty-text {
-  margin: 7px auto 0;
-
-  max-width: 430px;
-
+.phoenix-empty-desc {
+  font-size: 13px;
   color: var(--phoenix-text-secondary);
-
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-@media (max-width: 900px) {
-  .phoenix-container {
-    width: min(100% - 28px, 720px);
-  }
-
-  .phoenix-stats-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .phoenix-container {
-    width: min(100% - 20px, 100%);
-  }
-
-  .phoenix-page-header {
-    flex-direction: column;
-    margin-bottom: 22px;
-  }
-
-  .phoenix-page-title {
-    font-size: 25px;
-  }
-
-  .phoenix-page-description {
-    font-size: 13px;
-  }
-
-  .phoenix-stats-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .phoenix-stat-card {
-    padding: 16px;
-  }
-
-  .phoenix-stat-value {
-    font-size: 24px;
-  }
-
-  .phoenix-btn {
-    min-height: 44px;
-  }
-}
-
-/* =========================================================
-   SMALL MOBILE
-========================================================= */
-
-@media (max-width: 400px) {
-  .phoenix-container {
-    width: calc(100% - 16px);
-  }
-
-  .phoenix-page-title {
-    font-size: 23px;
-  }
+  max-width: 420px;
+  margin: 0 auto 20px;
+  line-height: 1.5;
 }
