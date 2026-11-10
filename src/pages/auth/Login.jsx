@@ -230,17 +230,9 @@ function Login() {
             </button>
           </form>
 
-          <div className="login-divider">
-            <span>New customer or team member?</span>
-          </div>
-
-          <Link to="/register" className="register-redirect-btn">
-            Create an Account
-          </Link>
-
           <div className="login-security-notice">
             <span className="sec-dot" />
-            <span>256-bit encrypted authentication powered by Supabase</span>
+            <span>Authorized Admin & Manager Access Only • 256-bit Encrypted</span>
           </div>
         </div>
       </section>

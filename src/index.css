@@ -144,6 +144,81 @@ button, a, input, select, textarea {
   touch-action: manipulation;
 }
 
+/* =========================================================
+   UNIVERSAL FORM & INPUT VISIBILITY SYSTEM
+   Fixes input text visibility across the entire website:
+   - Typed characters clearly visible with high contrast #111827
+   - Crisp white background #ffffff for readable typography
+   - Blue caret cursor #2563eb
+   - Legible placeholders, focus states and autofill overrides
+========================================================= */
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+textarea,
+select {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+  caret-color: #2563eb !important;
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: var(--radius-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Input Placeholders */
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+/* Form Labels */
+label {
+  color: #e5e7eb !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+/* Required Indicator Visibility */
+label .required,
+label span.required,
+.form-req-star {
+  color: #f59e0b !important;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+/* Focus and Active States */
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  border-color: #00c8ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 200, 255, 0.18) !important;
+}
+
+/* Dropdown Options */
+select option {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+  padding: 8px;
+}
+
+/* Browser Autofill Support */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: #2563eb !important;
+  transition: background-color 9999s ease-in-out 0s !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+}
+
 img {
   max-width: 100%;
   display: block;

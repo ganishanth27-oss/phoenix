@@ -287,9 +287,9 @@
 }
 
 .form-group label {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #cbd5e1;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #e5e7eb !important;
 }
 
 .input-with-icon {
@@ -303,25 +303,33 @@
   left: 14px;
   font-size: 15px;
   pointer-events: none;
+  z-index: 2;
 }
 
 .input-with-icon input {
   width: 100%;
-  padding: 12px 14px 12px 42px;
+  padding: 12px 14px 12px 42px !important;
   border-radius: var(--radius-sm);
-  background: rgba(6, 11, 24, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: #ffffff !important;
+  border: 1.5px solid #d1d5db !important;
+  color: #111827 !important;
+  caret-color: #2563eb !important;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 14px;
   outline: none;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.input-with-icon input::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
 }
 
 .input-with-icon input:focus {
-  border-color: var(--color-cyan);
-  box-shadow: 0 0 14px rgba(0, 212, 255, 0.25);
-  background: rgba(10, 18, 38, 0.95);
+  border-color: #00c8ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 200, 255, 0.18) !important;
+  background: #ffffff !important;
 }
 
 .password-toggle {
@@ -329,11 +337,12 @@
   right: 12px;
   background: transparent;
   border: none;
-  color: var(--color-cyan);
+  color: #2563eb;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 4px 6px;
+  z-index: 2;
 }
 
 .login-submit-btn {

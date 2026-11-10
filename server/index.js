@@ -13,13 +13,19 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:8000",
   "https://phoenix-chi-beryl.vercel.app",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -1042,6 +1048,14 @@ app.post(
    PUBLIC: SUBMIT ENQUIRY
 ========================= */
 
+/*
+  Guest user UUID for all public enquiries.
+  This permanent account was provisioned in Supabase:
+  guest@phoenixsolutions.com / role: user / status: active
+*/
+const GUEST_USER_ID =
+  "383fcb79-2475-4b65-8ca8-e014ea872324";
+
 app.post(
   "/api/public/enquiry",
   async (req, res) => {
@@ -1052,8 +1066,11 @@ app.post(
         phone,
         company,
         service_interest,
+        serviceCategory,
         message,
-      } = req.body;
+      } = req.body || {};
+
+      /* ── Validate required fields ── */
 
       if (
         !name?.trim() ||
@@ -1071,9 +1088,7 @@ app.post(
       const emailRegex =
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      if (
-        !emailRegex.test(email.trim())
-      ) {
+      if (!emailRegex.test(email.trim())) {
         return res.status(400).json({
           success: false,
           message:
@@ -1081,27 +1096,107 @@ app.post(
         });
       }
 
+      /* Support either service_interest or serviceCategory */
+      const resolvedService =
+        service_interest?.trim() ||
+        serviceCategory?.trim() ||
+        null;
+
+      const cleanName    = name.trim();
+      const cleanEmail   = email.trim().toLowerCase();
+      const cleanPhone   = phone?.trim()   || null;
+      const cleanCompany = company?.trim() || null;
+      const cleanMsg     = message.trim();
+
+      /* ── 1. Insert into contact_enquiries ── */
+
       const {
         data: enquiry,
         error: enquiryError,
       } = await supabaseAdmin
         .from("contact_enquiries")
         .insert({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          phone: phone?.trim() || null,
-          company:
-            company?.trim() || null,
-          service_interest:
-            service_interest?.trim() ||
-            null,
-          message: message.trim(),
+          name:             cleanName,
+          email:            cleanEmail,
+          phone:            cleanPhone,
+          company:          cleanCompany,
+          service_interest: resolvedService,
+          message:          cleanMsg,
         })
         .select("id, created_at")
         .single();
 
       if (enquiryError) {
+        console.error(
+          "contact_enquiries insert error:",
+          enquiryError
+        );
         throw enquiryError;
+      }
+
+      /* ── 2. Look up matching service_id ── */
+
+      let matchedServiceId = null;
+
+      if (resolvedService) {
+        const {
+          data: matchedService,
+        } = await supabaseAdmin
+          .from("services")
+          .select("id")
+          .ilike("name", `%${resolvedService}%`)
+          .limit(1)
+          .maybeSingle();
+
+        matchedServiceId =
+          matchedService?.id || null;
+      }
+
+      /* ── 3. Build user_requests record ── */
+
+      const reqTitle =
+        cleanCompany
+          ? `${resolvedService || "General Enquiry"} - ${cleanCompany}`
+          : `${resolvedService || "General Enquiry"} - ${cleanName}`;
+
+      const reqRequirements = [
+        "[CUSTOMER DETAILS]",
+        `Name: ${cleanName}`,
+        `Email: ${cleanEmail}`,
+        `Phone: ${cleanPhone || "Not provided"}`,
+        `Company/Organization: ${cleanCompany || "Not provided"}`,
+        `Service Category: ${resolvedService || "Not specified"}`,
+        "",
+        "[REQUIREMENTS & MESSAGE]",
+        cleanMsg,
+      ].join("\n");
+
+      /* ── 4. Insert into user_requests ── */
+
+      const {
+        error: reqErr,
+      } = await supabaseAdmin
+        .from("user_requests")
+        .insert({
+          user_id:    GUEST_USER_ID,
+          service_id: matchedServiceId,
+          title:       reqTitle,
+          description: cleanMsg,
+          requirements: reqRequirements,
+          priority:    "medium",
+          status:      "submitted",
+        });
+
+      if (reqErr) {
+        /*
+          Log but do NOT fail the whole request —
+          the contact_enquiries row was already saved.
+          Admin can still see the enquiry via contact_enquiries.
+        */
+        console.error(
+          "user_requests insert error:",
+          reqErr
+        );
       }
 
       return res.status(201).json({
@@ -1111,10 +1206,7 @@ app.post(
         enquiry_id: enquiry.id,
       });
     } catch (error) {
-      console.error(
-        "Enquiry error:",
-        error
-      );
+      console.error("Enquiry error:", error);
 
       return res.status(500).json({
         success: false,

@@ -188,10 +188,17 @@ function Home() {
         setLoadingPortfolio(true);
         const res = await fetch("/api/public/portfolio");
         if (res.ok) {
-          const json = await res.json();
-          if (json.data && json.data.length > 0) {
-            setPortfolioProjects(json.data);
-            return;
+          const text = await res.text();
+          if (text) {
+            try {
+              const json = JSON.parse(text);
+              if (json.data && json.data.length > 0) {
+                setPortfolioProjects(json.data);
+                return;
+              }
+            } catch (parseErr) {
+              console.warn("Portfolio JSON parse notice:", parseErr);
+            }
           }
         }
         // Direct Supabase query fallback
@@ -227,30 +234,91 @@ function Home() {
       return;
     }
 
+    // Basic client-side email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(enquiryForm.email.trim())) {
+      setEnquiryStatus({
+        text: "Please enter a valid email address.",
+        type: "error",
+      });
+      return;
+    }
+
     setSubmittingEnquiry(true);
     setEnquiryStatus({ text: "", type: "" });
 
     try {
-      const res = await fetch("/api/public/enquiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: enquiryForm.name.trim(),
-          email: enquiryForm.email.trim(),
-          phone: enquiryForm.phone?.trim() || null,
-          company: enquiryForm.subject?.trim() || null,
-          serviceCategory: enquiryForm.serviceCategory || "General Inquiry",
-          message: enquiryForm.message.trim(),
-        }),
-      });
+      // Correctly map form fields: sending both service_interest & serviceCategory
+      const payload = {
+        name: enquiryForm.name.trim(),
+        email: enquiryForm.email.trim(),
+        phone: enquiryForm.phone?.trim() || null,
+        company: enquiryForm.subject?.trim() || null,
+        service_interest: enquiryForm.serviceCategory || "General Inquiry",
+        serviceCategory: enquiryForm.serviceCategory || "General Inquiry",
+        message: enquiryForm.message.trim(),
+      };
 
-      const json = await res.json();
+      let res;
+      try {
+        res = await fetch("/api/public/enquiry", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } catch (networkErr) {
+        // Direct Supabase fallback if backend server is not running or proxy unreachable
+        console.warn("Backend proxy unavailable, falling back to direct Supabase insertion:", networkErr);
+        const { data: directInsert, error: directErr } = await supabase
+          .from("contact_enquiries")
+          .insert({
+            name: payload.name,
+            email: payload.email.toLowerCase(),
+            phone: payload.phone,
+            company: payload.company,
+            service_interest: payload.service_interest,
+            message: payload.message,
+          })
+          .select("id")
+          .single();
+
+        if (directErr) {
+          throw new Error("Unable to send enquiry. Please check your network and try again.");
+        }
+
+        setEnquiryStatus({
+          text: "Thank you for contacting Phoenix Solutions! A Senior Project Manager will review your requirements and respond within 24 hours.",
+          type: "success",
+        });
+        setEnquiryForm({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          serviceCategory: "",
+          message: "",
+        });
+        return;
+      }
+
+      // Safe response reading: reads response body as text first to prevent JSON parse errors
+      const responseText = await res.text();
+      let json = null;
+      if (responseText) {
+        try {
+          json = JSON.parse(responseText);
+        } catch (jsonErr) {
+          console.warn("Non-JSON response received:", responseText);
+        }
+      }
+
       if (!res.ok) {
-        throw new Error(json.error || json.message || "Failed to submit enquiry.");
+        const errorMsg = json?.message || json?.error || "Failed to submit enquiry. Please try again.";
+        throw new Error(errorMsg);
       }
 
       setEnquiryStatus({
-        text: "Thank you for contacting Phoenix Solutions! A Senior Project Manager will review your requirements and respond within 24 hours.",
+        text: json?.message || "Thank you for contacting Phoenix Solutions! A Senior Project Manager will review your requirements and respond within 24 hours.",
         type: "success",
       });
       setEnquiryForm({
@@ -262,7 +330,11 @@ function Home() {
         message: "",
       });
     } catch (err) {
-      setEnquiryStatus({ text: err.message || "Network error. Please try again.", type: "error" });
+      console.error("Enquiry submission error:", err);
+      setEnquiryStatus({
+        text: err.message || "Failed to submit enquiry. Please try again.",
+        type: "error",
+      });
     } finally {
       setSubmittingEnquiry(false);
     }
@@ -834,7 +906,9 @@ function Home() {
                   <form onSubmit={handleEnquirySubmit} className="enquiry-form">
                     <div className="form-grid-2">
                       <div className="form-group">
-                        <label htmlFor="enq-name">Your Full Name *</label>
+                        <label htmlFor="enq-name">
+                          Your Full Name <span className="form-req-star">*</span>
+                        </label>
                         <input
                           id="enq-name"
                           type="text"
@@ -846,7 +920,9 @@ function Home() {
                       </div>
 
                       <div className="form-group">
-                        <label htmlFor="enq-email">Email Address *</label>
+                        <label htmlFor="enq-email">
+                          Email Address <span className="form-req-star">*</span>
+                        </label>
                         <input
                           id="enq-email"
                           type="email"
@@ -902,7 +978,9 @@ function Home() {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="enq-msg">Project Requirements & Timeline *</label>
+                      <label htmlFor="enq-msg">
+                        Project Requirements & Timeline <span className="form-req-star">*</span>
+                      </label>
                       <textarea
                         id="enq-msg"
                         required

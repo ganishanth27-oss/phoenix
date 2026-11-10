@@ -330,33 +330,37 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: #ffffff !important;
+  border: 1.5px solid #d1d5db;
   border-radius: 14px;
   padding: 6px 8px 6px 14px;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .ai-input-wrap:focus-within {
-  border-color: #00d4ff;
-  box-shadow: 0 0 16px rgba(0, 212, 255, 0.3);
+  border-color: #00c8ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 200, 255, 0.18) !important;
 }
 
 .ai-input-wrap textarea {
   flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #f8fafc;
-  font-size: 13.5px;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: #111827 !important;
+  caret-color: #2563eb !important;
+  font-size: 14px;
   font-family: inherit;
   resize: none;
   max-height: 90px;
   padding: 6px 0;
+  box-shadow: none !important;
 }
 
 .ai-input-wrap textarea::placeholder {
-  color: #64748b;
+  color: #6b7280 !important;
+  opacity: 1 !important;
 }
 
 .ai-send-btn {
