@@ -1,95 +1,89 @@
 /* =========================================================
-   PHOENIX — GLOBAL DESIGN SYSTEM
-   Modern, Corporate & Premium UI
+   PHOENIX SOLUTIONS — UNIFIED DESIGN SYSTEM
+   Premium Futuristic Theme:
+   Deep Navy / Near Black background (#030712 / #070d1e)
+   Primary: Electric Blue (#0066ff / #2563eb)
+   Secondary: Metallic Silver (#e2e8f0 / #94a3b8)
+   Accent: Royal Gold (#f59e0b / #fbbf24)
+   Highlights: Cyan Glow (#00d4ff / #38bdf8)
 ========================================================= */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
-
-/* =========================================================
-   ROOT DESIGN TOKENS
-   Deep Navy, Slate Blue, Violet/Cyan Accents, Clean Surfaces
-========================================================= */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 
 :root {
-  /* Brand Navy & Indigo */
-  --phoenix-navy-950: #0a0f1d;
-  --phoenix-navy-900: #0f172a;
-  --phoenix-navy-800: #1e293b;
-  --phoenix-navy-700: #334155;
-  --phoenix-navy-600: #475569;
+  /* Futuristic Dark Foundation */
+  --bg-deep: #030712;
+  --bg-navy: #070d1e;
+  --bg-surface: #0c162d;
+  --bg-card: rgba(13, 23, 48, 0.75);
+  --bg-glass: rgba(15, 27, 56, 0.65);
+  --bg-glass-elevated: rgba(20, 35, 71, 0.82);
 
-  /* Primary Blue & Indigo */
-  --phoenix-primary: #2563eb;
-  --phoenix-primary-hover: #1d4ed8;
-  --phoenix-primary-dark: #1e40af;
-  --phoenix-primary-light: #eff6ff;
-  --phoenix-primary-glow: rgba(37, 99, 235, 0.15);
+  /* Primary Electric Blue */
+  --color-primary: #0066ff;
+  --color-primary-light: #38bdf8;
+  --color-primary-glow: rgba(0, 102, 255, 0.35);
 
-  /* Modern Accents */
-  --phoenix-accent-cyan: #06b6d4;
-  --phoenix-accent-cyan-light: #ecfeff;
-  --phoenix-accent-violet: #6366f1;
-  --phoenix-accent-violet-light: #eef2ff;
+  /* Cyan Highlight Glow */
+  --color-cyan: #00d4ff;
+  --color-cyan-glow: rgba(0, 212, 255, 0.4);
 
-  /* Backgrounds & Clean Surfaces */
-  --phoenix-bg: #f8fafc;
-  --phoenix-bg-subtle: #f1f5f9;
-  --phoenix-surface: #ffffff;
-  --phoenix-surface-soft: #fbfcfe;
-  --phoenix-surface-elevated: #ffffff;
+  /* Metallic Silver & Muted */
+  --color-silver: #e2e8f0;
+  --color-silver-muted: #94a3b8;
+  --color-silver-dim: #64748b;
 
-  /* Typography Colors */
-  --phoenix-text: #0f172a;
-  --phoenix-text-secondary: #475569;
+  /* Royal Gold Accent */
+  --color-gold: #f59e0b;
+  --color-gold-light: #fbbf24;
+  --color-gold-glow: rgba(245, 158, 11, 0.35);
+
+  /* Borders */
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glow-blue: rgba(0, 212, 255, 0.28);
+  --border-glow-gold: rgba(245, 158, 11, 0.35);
+
+  /* Functional */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  /* Fonts */
+  --font-brand: "Cinzel", Georgia, serif;
+  --font-heading: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "Space Grotesk", monospace, sans-serif;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-glass: 0 16px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-neon-blue: 0 0 25px rgba(0, 212, 255, 0.35);
+  --shadow-neon-gold: 0 0 25px rgba(245, 158, 11, 0.35);
+
+  /* Legacy variables compatibility */
+  --phoenix-navy-950: var(--bg-deep);
+  --phoenix-navy-900: var(--bg-navy);
+  --phoenix-navy-800: var(--bg-surface);
+  --phoenix-primary: var(--color-primary);
+  --phoenix-primary-glow: var(--color-primary-glow);
+  --phoenix-accent-cyan: var(--color-cyan);
+  --phoenix-bg: #060b18;
+  --phoenix-surface: #0d1730;
+  --phoenix-text: #f8fafc;
+  --phoenix-text-secondary: #94a3b8;
   --phoenix-text-muted: #64748b;
-  --phoenix-text-dim: #94a3b8;
-  --phoenix-text-inverse: #ffffff;
+  --phoenix-border: rgba(255, 255, 255, 0.08);
+  --phoenix-border-subtle: rgba(255, 255, 255, 0.05);
 
-  /* Borders & Dividers */
-  --phoenix-border: #e2e8f0;
-  --phoenix-border-subtle: #edf2f7;
-  --phoenix-border-strong: #cbd5e1;
-  --phoenix-border-focus: #3b82f6;
-
-  /* Feedback Semantics */
-  --phoenix-success: #10b981;
-  --phoenix-success-light: #ecfdf5;
-  --phoenix-success-text: #047857;
-
-  --phoenix-warning: #f59e0b;
-  --phoenix-warning-light: #fffbeb;
-  --phoenix-warning-text: #b45309;
-
-  --phoenix-danger: #ef4444;
-  --phoenix-danger-light: #fef2f2;
-  --phoenix-danger-text: #b91c1c;
-
-  --phoenix-info: #0284c7;
-  --phoenix-info-light: #f0f9ff;
-  --phoenix-info-text: #0369a1;
-
-  /* Rounded Corners */
-  --phoenix-radius-xs: 6px;
-  --phoenix-radius-sm: 8px;
-  --phoenix-radius-md: 12px;
-  --phoenix-radius-lg: 16px;
-  --phoenix-radius-xl: 20px;
-  --phoenix-radius-2xl: 24px;
-  --phoenix-radius-full: 9999px;
-
-  /* Soft Corporate Shadows */
-  --phoenix-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --phoenix-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --phoenix-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.05), 0 2px 4px rgba(15, 23, 42, 0.03);
-  --phoenix-shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.07), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
-  --phoenix-shadow-xl: 0 20px 35px -5px rgba(15, 23, 42, 0.09), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-  --phoenix-shadow-glow: 0 0 0 1px rgba(37, 99, 235, 0.1), 0 8px 24px rgba(37, 99, 235, 0.12);
-
-  /* Typography Stacks */
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: var(--phoenix-text);
-  background: var(--phoenix-bg);
-
+  font-family: var(--font-body);
+  color: var(--color-silver);
+  background-color: var(--bg-deep);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -97,10 +91,10 @@
 }
 
 /* =========================================================
-   RESET & BASE STYLES
+   GLOBAL RESET & SMOOTH SCROLLING
 ========================================================= */
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -108,41 +102,46 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 80px;
 }
 
 body {
   margin: 0;
-  min-width: 320px;
   min-height: 100vh;
-  background: var(--phoenix-bg);
-  color: var(--phoenix-text);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.5;
-  font-size: 14px;
+  background: var(--bg-deep);
+  color: var(--color-silver);
+  line-height: 1.6;
+  overflow-x: hidden;
 }
 
-button,
-input,
-textarea,
-select {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-button {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+::-webkit-scrollbar-track {
+  background: #030712;
 }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.25);
+  border-radius: 4px;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.5);
+}
+
+/* Accessible Focus States */
+:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 3px;
+}
+
+/* Standard Touch Targets */
+button, a, input, select, textarea {
+  touch-action: manipulation;
 }
 
 img {
@@ -150,309 +149,12 @@ img {
   display: block;
 }
 
-/* Selection */
-::selection {
-  background: #2563eb;
-  color: #ffffff;
-}
-
-/* Scrollbars */
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: var(--phoenix-radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* =========================================================
-   TYPOGRAPHY UTILITIES
-========================================================= */
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  color: var(--phoenix-text);
-  letter-spacing: -0.02em;
-  font-weight: 700;
-}
-
-/* =========================================================
-   COMMON UI SYSTEM: CARDS, BUTTONS, BADGES, INPUTS
-========================================================= */
-
-.phoenix-card {
-  background: var(--phoenix-surface);
-  border: 1px solid var(--phoenix-border);
-  border-radius: var(--phoenix-radius-lg);
-  box-shadow: var(--phoenix-shadow-xs);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.phoenix-card-interactive:hover {
-  border-color: #cbd5e1;
-  box-shadow: var(--phoenix-shadow-md);
-  transform: translateY(-2px);
-}
-
-/* Premium Buttons */
-.phoenix-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 16px;
-  border: 1px solid transparent;
-  border-radius: var(--phoenix-radius-md);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
-}
-
-.phoenix-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.phoenix-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.phoenix-btn-primary {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25), 0 1px 2px rgba(37, 99, 235, 0.15);
-}
-
-.phoenix-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
-}
-
-.phoenix-btn-secondary {
-  background: #ffffff;
-  color: var(--phoenix-text);
-  border-color: var(--phoenix-border);
-  box-shadow: var(--phoenix-shadow-xs);
-}
-
-.phoenix-btn-secondary:hover:not(:disabled) {
-  background: var(--phoenix-bg-subtle);
-  border-color: var(--phoenix-border-strong);
-}
-
-.phoenix-btn-outline {
-  background: transparent;
-  color: var(--phoenix-primary);
-  border-color: rgba(37, 99, 235, 0.35);
-}
-
-.phoenix-btn-outline:hover:not(:disabled) {
-  background: var(--phoenix-primary-light);
-  border-color: var(--phoenix-primary);
-}
-
-.phoenix-btn-danger {
-  background: #ef4444;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25);
-}
-
-.phoenix-btn-danger:hover:not(:disabled) {
-  background: #dc2626;
-  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.3);
-}
-
-/* Form Inputs */
-.phoenix-input,
-.phoenix-select,
-.phoenix-textarea {
-  width: 100%;
-  border: 1px solid var(--phoenix-border);
-  border-radius: var(--phoenix-radius-md);
-  background: #ffffff;
-  color: var(--phoenix-text);
-  outline: none;
-  font-size: 14px;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.phoenix-input,
-.phoenix-select {
-  height: 42px;
-  padding: 0 14px;
-}
-
-.phoenix-textarea {
-  min-height: 100px;
-  padding: 10px 14px;
-  resize: vertical;
-}
-
-.phoenix-input:focus,
-.phoenix-select:focus,
-.phoenix-textarea:focus {
-  border-color: var(--phoenix-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-.phoenix-input::placeholder,
-.phoenix-textarea::placeholder {
-  color: var(--phoenix-text-dim);
-}
-
-.phoenix-label {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--phoenix-navy-700);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* Badges */
-.phoenix-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 24px;
-  padding: 0 9px;
-  border-radius: var(--phoenix-radius-full);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.phoenix-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.phoenix-badge-success {
-  background: var(--phoenix-success-light);
-  color: var(--phoenix-success-text);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.phoenix-badge-warning {
-  background: var(--phoenix-warning-light);
-  color: var(--phoenix-warning-text);
-  border: 1px solid rgba(245, 158, 11, 0.25);
-}
-
-.phoenix-badge-danger {
-  background: var(--phoenix-danger-light);
-  color: var(--phoenix-danger-text);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.phoenix-badge-info {
-  background: var(--phoenix-info-light);
-  color: var(--phoenix-info-text);
-  border: 1px solid rgba(2, 132, 199, 0.2);
-}
-
-.phoenix-badge-neutral {
-  background: var(--phoenix-bg-subtle);
-  color: var(--phoenix-text-secondary);
-  border: 1px solid var(--phoenix-border);
-}
-
-.phoenix-badge-primary {
-  background: var(--phoenix-primary-light);
-  color: var(--phoenix-primary);
-  border: 1px solid rgba(37, 99, 235, 0.2);
-}
-
-/* Tables */
-.phoenix-table-container {
-  background: #ffffff;
-  border: 1px solid var(--phoenix-border);
-  border-radius: var(--phoenix-radius-lg);
-  overflow: hidden;
-  box-shadow: var(--phoenix-shadow-xs);
-}
-
-.phoenix-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 13px;
-  text-align: left;
-}
-
-.phoenix-table th {
-  background: #f8fafc;
-  color: var(--phoenix-navy-600);
-  font-weight: 600;
-  padding: 13px 18px;
-  border-bottom: 1px solid var(--phoenix-border);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.phoenix-table td {
-  padding: 15px 18px;
-  border-bottom: 1px solid var(--phoenix-border-subtle);
-  color: var(--phoenix-text);
-  vertical-align: middle;
-}
-
-.phoenix-table tr:last-child td {
-  border-bottom: none;
-}
-
-.phoenix-table tr:hover td {
-  background: #f8fafc;
-}
-
-/* Empty States */
-.phoenix-empty {
-  padding: 48px 24px;
-  text-align: center;
-  background: #ffffff;
-  border: 1px dashed var(--phoenix-border);
-  border-radius: var(--phoenix-radius-lg);
-}
-
-.phoenix-empty-icon {
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 14px;
-  border-radius: 14px;
-  background: var(--phoenix-primary-light);
-  color: var(--phoenix-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-}
-
-.phoenix-empty-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--phoenix-text);
-  margin-bottom: 6px;
-}
-
-.phoenix-empty-desc {
-  font-size: 13px;
-  color: var(--phoenix-text-secondary);
-  max-width: 420px;
-  margin: 0 auto 20px;
-  line-height: 1.5;
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

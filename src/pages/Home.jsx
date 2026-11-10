@@ -2,98 +2,168 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import phoenixLogo from "../assets/phoenix-logo.png";
+import PhoenixAIModal from "../components/PhoenixAIModal";
+import Phoenix3DHero from "../components/Phoenix3DHero";
 import "./Home.css";
 
 function Home() {
   const navigate = useNavigate();
+
+  // Dynamic services & portfolio states
   const [services, setServices] = useState([]);
   const [loadingServices, setLoadingServices] = useState(true);
-  const [sessionUser, setSessionUser] = useState(null);
-
-  // Public portfolio state
   const [portfolioProjects, setPortfolioProjects] = useState([]);
   const [loadingPortfolio, setLoadingPortfolio] = useState(true);
   const [selectedPortfolioModal, setSelectedPortfolioModal] = useState(null);
 
-  // Public Enquiry state
+  // Auth session check (for Admin / Manager quick status if already logged in)
+  const [sessionUser, setSessionUser] = useState(null);
+
+  // Mobile navigation drawer state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Phoenix AI Modal state
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+
+  // Public Contact / Enquiry Form State (NO LOGIN REQUIRED)
   const [enquiryForm, setEnquiryForm] = useState({
     name: "",
     email: "",
     phone: "",
-    company: "",
+    subject: "",
     serviceCategory: "",
     message: "",
   });
   const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
   const [enquiryStatus, setEnquiryStatus] = useState({ text: "", type: "" });
 
-  // Core service portfolio mapping to highlight verified services from requirements
+  // Core verified services definitions
   const coreHighlights = [
     {
-      title: "Web Development",
+      id: "web-dev",
+      title: "Web & Cloud Development",
       icon: "🌐",
-      category: "Engineering",
-      desc: "Modern responsive web applications, portals, and cloud backends built for high performance and reliability.",
+      category: "Full-Stack Engineering",
+      desc: "Modern responsive web applications, portals, and cloud backends built for high performance, zero downtime, and robust enterprise scalability.",
+      tag: "Enterprise Stack"
     },
     {
-      title: "App Development",
+      id: "app-dev",
+      title: "Mobile App Development",
       icon: "📱",
-      category: "Engineering",
-      desc: "Cross-platform iOS and Android mobile software designed with modern UX and real-time syncing.",
+      category: "Native & Cross-Platform",
+      desc: "Cross-platform iOS and Android mobile software designed with modern UX, offline caching, and real-time cloud data syncing.",
+      tag: "iOS & Android"
     },
     {
-      title: "Advertisement Creation",
-      icon: "📢",
-      category: "Creative & Media",
-      desc: "High-impact visual campaigns, social media ad units, and brand positioning collateral.",
-    },
-    {
-      title: "Video Editing",
-      icon: "🎬",
-      category: "Creative & Media",
-      desc: "Professional post-production, motion graphics, promotional cuts, and storytelling for digital channels.",
-    },
-    {
-      title: "Meme Creation",
-      icon: "⚡",
-      category: "Viral Marketing",
-      desc: "Culturally resonant viral creative content engineered for rapid engagement and community building.",
-    },
-    {
-      title: "UI/UX Design",
+      id: "ui-ux",
+      title: "UI/UX & Design Systems",
       icon: "🎨",
-      category: "Design System",
-      desc: "Intuitive product architecture, wireframes, high-fidelity prototypes, and design systems.",
+      category: "Product Experience",
+      desc: "Intuitive product architecture, user research, wireframes, high-fidelity prototypes, and design systems with futuristic precision.",
+      tag: "Design System"
     },
     {
+      id: "3d-blueprints",
       title: "3D Design & Blueprints",
       icon: "📐",
-      category: "Architecture & CAD",
-      desc: "Precision 3D modeling, construction blueprints, architectural drafting, and spatial visualization.",
+      category: "Spatial Architecture & CAD",
+      desc: "Precision 3D modeling, construction blueprints, architectural drafting, MEP schematics, and interactive spatial visualizations.",
+      tag: "3D CAD & MEP"
+    },
+    {
+      id: "ad-creation",
+      title: "Advertisement Creation",
+      icon: "📢",
+      category: "Creative Media & Ads",
+      desc: "High-impact visual campaigns, social media ad units, multi-platform banner suites, and strategic brand positioning collateral.",
+      tag: "Growth Media"
+    },
+    {
+      id: "video-edit",
+      title: "Video Editing & Motion",
+      icon: "🎬",
+      category: "Post-Production",
+      desc: "Professional post-production, motion graphics, promotional cuts, 3D visual FX, and compelling storytelling for digital channels.",
+      tag: "Motion Graphics"
+    },
+    {
+      id: "viral-marketing",
+      title: "Viral Marketing & Memes",
+      icon: "⚡",
+      category: "Community & Viral",
+      desc: "Culturally resonant viral creative content, trend-driven digital media engineered for rapid engagement, and social community building.",
+      tag: "High Velocity"
     },
   ];
 
+  // Curated fallback projects with thumbnails
+  const fallbackProjects = [
+    {
+      id: "p-1",
+      title: "Enterprise Financial Dashboard & Analytics",
+      service_category: "Web & Cloud Development",
+      description: "High-throughput financial analytics portal with real-time charting, multi-tenant security, and automated reporting infrastructure.",
+      client_name: "Apex Global Capital",
+      completion_date: "October 2026",
+      technologies_used: ["React 19", "Node.js", "Supabase", "PostgreSQL", "TailwindCSS"],
+      thumbnail_url: null,
+      icon: "📊"
+    },
+    {
+      id: "p-2",
+      title: "Commercial Complex 3D Architectural Blueprint",
+      service_category: "3D Design & Blueprints",
+      description: "Architectural spatial rendering, structural schematics, and MEP blueprints for an 80,000 sq ft smart retail & commercial facility.",
+      client_name: "Nexus Properties Group",
+      completion_date: "September 2026",
+      technologies_used: ["Revit", "AutoCAD", "Blender 3D", "Spatial CAD"],
+      thumbnail_url: null,
+      icon: "🏢"
+    },
+    {
+      id: "p-3",
+      title: "Next-Gen Telehealth Mobile Platform",
+      service_category: "Mobile App Development",
+      description: "Encrypted patient-practitioner video consultation mobile app with intuitive calendar scheduling and HIPAA-compliant health records.",
+      client_name: "CareVanguard Health",
+      completion_date: "August 2026",
+      technologies_used: ["React Native", "WebRTC", "Node.js", "PostgreSQL"],
+      thumbnail_url: null,
+      icon: "🩺"
+    },
+    {
+      id: "p-4",
+      title: "High-Velocity Digital Brand & Ad Suite",
+      service_category: "Advertisement Creation",
+      description: "Comprehensive multi-channel digital ad campaign generating over 4.2M verified impressions and 28% increase in qualified sales pipeline.",
+      client_name: "Starlight Dynamics",
+      completion_date: "July 2026",
+      technologies_used: ["Adobe After Effects", "Figma", "Cinema 4D"],
+      thumbnail_url: null,
+      icon: "🚀"
+    }
+  ];
+
   useEffect(() => {
-    // Check if user is already logged in
-    const checkAuth = async () => {
+    // Check if session exists (to display Admin/Manager link if logged in)
+    const checkSession = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("id, role, name")
+            .select("id, role, name, email")
             .eq("id", user.id)
             .single();
-          if (profile) {
-            setSessionUser(profile);
-          }
+          if (profile) setSessionUser(profile);
         }
       } catch (err) {
-        console.error("Auth check error:", err);
+        // Public page gracefully continues
       }
     };
 
-    // Load actual active services from Supabase
+    // Load services from database
     const loadServices = async () => {
       try {
         setLoadingServices(true);
@@ -102,51 +172,58 @@ function Home() {
           .select("id, name, description, status")
           .eq("status", "active")
           .order("name");
-
         if (!error && data && data.length > 0) {
           setServices(data);
         }
       } catch (e) {
-        console.error("Failed to load services from DB:", e);
+        console.error("Services load error:", e);
       } finally {
         setLoadingServices(false);
       }
     };
 
-    // Load published public portfolio projects
+    // Load portfolio projects
     const loadPortfolio = async () => {
       try {
         setLoadingPortfolio(true);
         const res = await fetch("/api/public/portfolio");
         if (res.ok) {
           const json = await res.json();
-          setPortfolioProjects(json.data || []);
-        } else {
-          // Fallback directly to supabase if server is restarting
-          const { data } = await supabase
-            .from("project_submissions")
-            .select("id, title, description, service_category, client_name, completion_date, technologies_used, thumbnail_url")
-            .eq("status", "Approved")
-            .eq("is_published", true)
-            .order("created_at", { ascending: false });
-          setPortfolioProjects(data || []);
+          if (json.data && json.data.length > 0) {
+            setPortfolioProjects(json.data);
+            return;
+          }
+        }
+        // Direct Supabase query fallback
+        const { data } = await supabase
+          .from("project_submissions")
+          .select("id, title, description, service_category, client_name, completion_date, technologies_used, thumbnail_url")
+          .eq("status", "Approved")
+          .eq("is_published", true)
+          .order("created_at", { ascending: false });
+        if (data && data.length > 0) {
+          setPortfolioProjects(data);
         }
       } catch (err) {
-        console.error("Failed to load portfolio:", err);
+        console.error("Portfolio load error:", err);
       } finally {
         setLoadingPortfolio(false);
       }
     };
 
-    checkAuth();
+    checkSession();
     loadServices();
     loadPortfolio();
   }, []);
 
+  // Handle Public Project Enquiry Submission (No auth required)
   const handleEnquirySubmit = async (e) => {
     e.preventDefault();
-    if (!enquiryForm.name || !enquiryForm.email || !enquiryForm.message) {
-      setEnquiryStatus({ text: "Please enter your name, email, and message.", type: "error" });
+    if (!enquiryForm.name.trim() || !enquiryForm.email.trim() || !enquiryForm.message.trim()) {
+      setEnquiryStatus({
+        text: "Please provide your name, valid email, and project details.",
+        type: "error",
+      });
       return;
     }
 
@@ -157,676 +234,787 @@ function Home() {
       const res = await fetch("/api/public/enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(enquiryForm),
+        body: JSON.stringify({
+          name: enquiryForm.name.trim(),
+          email: enquiryForm.email.trim(),
+          phone: enquiryForm.phone?.trim() || null,
+          company: enquiryForm.subject?.trim() || null,
+          serviceCategory: enquiryForm.serviceCategory || "General Inquiry",
+          message: enquiryForm.message.trim(),
+        }),
       });
 
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || "Failed to submit enquiry.");
+        throw new Error(json.error || json.message || "Failed to submit enquiry.");
       }
 
       setEnquiryStatus({
-        text: "Thank you for reaching out! A Phoenix senior manager will review your enquiry promptly.",
+        text: "Thank you for contacting Phoenix Solutions! A Senior Project Manager will review your requirements and respond within 24 hours.",
         type: "success",
       });
       setEnquiryForm({
         name: "",
         email: "",
         phone: "",
-        company: "",
+        subject: "",
         serviceCategory: "",
         message: "",
       });
     } catch (err) {
-      setEnquiryStatus({ text: err.message, type: "error" });
+      setEnquiryStatus({ text: err.message || "Network error. Please try again.", type: "error" });
     } finally {
       setSubmittingEnquiry(false);
     }
   };
 
-  const getDashboardPath = () => {
-    if (!sessionUser) return "/login";
-    if (sessionUser.role === "admin") return "/admin";
-    if (sessionUser.role === "manager") return "/manager";
-    return "/user";
-  };
+  const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
     <div className="phoenix-homepage">
       {/* =====================================================
-          TOP NAVIGATION BAR
+          BACKGROUND FLOATING PHOENIX WATERMARK
+          Subtle 3D low-opacity Phoenix watermark behind homepage
+      ===================================================== */}
+      <div className="phoenix-bg-watermark-wrapper" aria-hidden="true">
+        <div className="phoenix-ambient-orb orb-cyan" />
+        <div className="phoenix-ambient-orb orb-blue" />
+        <div className="phoenix-ambient-orb orb-gold" />
+        <div className="phoenix-bg-grid" />
+        <img
+          src={phoenixLogo}
+          alt=""
+          className="phoenix-watermark-logo"
+        />
+      </div>
+
+      {/* =====================================================
+          TOP RESPONSIVE NAVIGATION BAR
       ===================================================== */}
       <header className="home-navbar">
         <div className="home-nav-container">
-          <Link to="/" className="home-brand">
+          {/* Brand Logo & Typography */}
+          <Link to="/" className="home-brand" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
             <div className="home-logo-box">
-              <img src={phoenixLogo} alt="Phoenix Logo" className="home-logo-img" />
+              <img src={phoenixLogo} alt="Phoenix Solutions Logo" className="home-logo-img" />
             </div>
             <div className="home-brand-text">
-              <strong>PHOENIX</strong>
-              <span>SOLUTIONS</span>
+              <span className="brand-title">
+                PHOENIX <span className="brand-gold">SOLUTIONS</span>
+              </span>
+              <span className="brand-tagline">Creating Beyond Limits</span>
             </div>
           </Link>
 
-          <nav className="home-nav-links">
+          {/* Desktop Navigation Links */}
+          <nav className="home-nav-links" aria-label="Main Navigation">
+            <a href="#hero">Home</a>
             <a href="#services">Services</a>
-            <a href="#portfolio">Portfolio</a>
-            <a href="#process">Our Process</a>
-            <a href="#capabilities">Why Phoenix</a>
+            <a href="#projects">Projects</a>
+            <a href="#about">About</a>
             <a href="#contact">Contact</a>
           </nav>
 
+          {/* Right Action Items: Phoenix AI Button & Auth Portals */}
           <div className="home-nav-actions">
-            {sessionUser ? (
+            <button
+              className="nav-ai-btn"
+              onClick={() => setAiModalOpen(true)}
+              aria-label="Open Phoenix AI Assistant"
+            >
+              <span className="nav-ai-icon">✦</span>
+              <span>Phoenix AI</span>
+              <span className="nav-ai-pulse" />
+            </button>
+
+            {/* Separate Admin & Manager Access */}
+            <div className="nav-auth-links">
+              <Link to="/login" className="nav-auth-link" title="Manager Portal Access">
+                Manager Login
+              </Link>
+              <Link to="/login" className="nav-auth-link admin-link" title="Administrator Portal Access">
+                Admin Login
+              </Link>
+            </div>
+
+            {/* Hamburger Button for Mobile */}
+            <button
+              className={`home-mobile-toggle ${mobileMenuOpen ? "open" : ""}`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Slide-in Navigation Drawer */}
+        <div
+          className={`home-mobile-drawer ${mobileMenuOpen ? "drawer-open" : ""}`}
+          onClick={closeMobileMenu}
+        >
+          <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-header">
+              <div className="drawer-brand">
+                <img src={phoenixLogo} alt="Phoenix Logo" className="drawer-logo-img" />
+                <div>
+                  <strong>PHOENIX SOLUTIONS</strong>
+                  <span>Creating Beyond Limits</span>
+                </div>
+              </div>
               <button
-                onClick={() => navigate(getDashboardPath())}
-                className="nav-btn-primary"
+                className="drawer-close-btn"
+                onClick={closeMobileMenu}
+                aria-label="Close menu"
               >
-                Go to Workspace ({sessionUser.role})
-              </button>
-            ) : (
-              <>
-                <Link to="/login" className="nav-btn-ghost">
-                  Sign In
-                </Link>
-                <Link to="/register" className="nav-btn-primary">
-                  Get Started
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* =====================================================
-          HERO SECTION
-      ===================================================== */}
-      <section className="home-hero">
-        <div className="home-hero-container">
-          <div className="hero-announcement">
-            <span className="announcement-badge">Phoenix Portal</span>
-            <span>Enterprise IT & Creative Management Platform</span>
-          </div>
-
-          <h1 className="hero-title">
-            Enterprise IT, Creative &
-            <br />
-            <span className="hero-gradient-text">Design Solutions Unified.</span>
-          </h1>
-
-          <p className="hero-subtitle">
-            Phoenix connects clients, managers, and specialized teams into a seamless digital delivery portal. From full-stack software and viral creative campaigns to architectural drafting and blueprints.
-          </p>
-
-          <div className="hero-cta-group">
-            <a href="#services" className="hero-btn-primary">
-              Explore Services <span>↓</span>
-            </a>
-            <Link to={sessionUser ? getDashboardPath() : "/register"} className="hero-btn-secondary">
-              {sessionUser ? "Go to My Dashboard" : "Get Started Now"} <span>→</span>
-            </Link>
-          </div>
-
-          {/* Key Value Pillars */}
-          <div className="hero-stats-bar">
-            <div className="hero-stat-item">
-              <strong>Unified Delivery</strong>
-              <span>Single workspace for all requests & progress</span>
-            </div>
-            <div className="hero-stat-sep" />
-            <div className="hero-stat-item">
-              <strong>End-to-End Governance</strong>
-              <span>Role-managed tracking with instant milestones</span>
-            </div>
-            <div className="hero-stat-sep" />
-            <div className="hero-stat-item">
-              <strong>Verified Security</strong>
-              <span>Protected Supabase cloud architecture</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================
-          SERVICES SECTION (Real database data + Core Capabilities)
-      ===================================================== */}
-      <section id="services" className="home-section services-section">
-        <div className="home-container">
-          <div className="section-header">
-            <span className="section-eyebrow">OUR SPECIALIZATIONS</span>
-            <h2>Comprehensive IT & Creative Services</h2>
-            <p>
-              Delivered by dedicated specialists and managed directly through your Phoenix client dashboard.
-            </p>
-          </div>
-
-          {/* Database Services or Core Highlights */}
-          <div className="services-grid">
-            {(services.length > 0 ? services : coreHighlights).map((item, idx) => (
-              <div key={item.id || idx} className="service-card">
-                <div className="service-card-top">
-                  <div className="service-icon-wrap">
-                    <span>{coreHighlights[idx % coreHighlights.length]?.icon || "⚡"}</span>
-                  </div>
-                  <span className="service-category">
-                    {coreHighlights[idx % coreHighlights.length]?.category || "Active Service"}
-                  </span>
-                </div>
-                <h3>{item.name || item.title}</h3>
-                <p>
-                  {item.description || item.desc || "Professional service delivered through the Phoenix client workspace."}
-                </p>
-                <div className="service-card-footer">
-                  <Link
-                    to={sessionUser ? "/user" : "/register"}
-                    className="service-action-link"
-                  >
-                    Request this service <span>→</span>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================
-          PUBLIC PROJECT PORTFOLIO SECTION
-      ===================================================== */}
-      <section id="portfolio" className="home-section portfolio-section">
-        <div className="home-container">
-          <div className="section-header">
-            <span className="section-eyebrow">FEATURED DELIVERABLES</span>
-            <h2>Client Project Portfolio</h2>
-            <p>
-              Explore sample work delivered by Phoenix specialists and verified by our quality assurance team.
-              Confidential internal materials remain private and protected.
-            </p>
-          </div>
-
-          {loadingPortfolio ? (
-            <div className="portfolio-loading">
-              <div className="portfolio-spinner" />
-              <p>Loading curated portfolio...</p>
-            </div>
-          ) : portfolioProjects.length === 0 ? (
-            <div className="portfolio-fallback-grid">
-              {/* Default showcasing items if no DB projects are published yet */}
-              <div className="portfolio-card">
-                <div className="portfolio-card-badge">Web Development</div>
-                <h3>Enterprise Financial Dashboard</h3>
-                <p>High-throughput SaaS accounting analytics portal with real-time charting and multi-tenant security.</p>
-                <div className="portfolio-tech-list">
-                  <span>React</span>
-                  <span>Node.js</span>
-                  <span>PostgreSQL</span>
-                </div>
-              </div>
-
-              <div className="portfolio-card">
-                <div className="portfolio-card-badge">3D Design & Blueprints</div>
-                <h3>Commercial Complex 3D Blueprint</h3>
-                <p>Architectural spatial rendering and MEP schematics for an 80,000 sq ft smart retail facility.</p>
-                <div className="portfolio-tech-list">
-                  <span>Revit</span>
-                  <span>AutoCAD</span>
-                  <span>Blender</span>
-                </div>
-              </div>
-
-              <div className="portfolio-card">
-                <div className="portfolio-card-badge">UI/UX & Mobile</div>
-                <h3>Next-Gen Telehealth Mobile App</h3>
-                <p>Patient-practitioner video consultation mobile app with intuitive calendar scheduling and encrypted records.</p>
-                <div className="portfolio-tech-list">
-                  <span>Figma</span>
-                  <span>React Native</span>
-                  <span>WebRTC</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="portfolio-grid">
-              {portfolioProjects.map((p) => (
-                <div
-                  key={p.id}
-                  className="portfolio-card interactive"
-                  onClick={() => setSelectedPortfolioModal(p)}
-                >
-                  {p.thumbnail_url && (
-                    <div className="portfolio-thumb-wrap">
-                      <img src={p.thumbnail_url} alt={p.title} className="portfolio-thumb-img" />
-                    </div>
-                  )}
-                  <div className="portfolio-card-badge">{p.service_category || "Deliverable"}</div>
-                  <h3>{p.title}</h3>
-                  <p className="portfolio-desc">
-                    {p.description?.length > 130 ? `${p.description.substring(0, 130)}...` : p.description}
-                  </p>
-                  {p.technologies_used && p.technologies_used.length > 0 && (
-                    <div className="portfolio-tech-list">
-                      {p.technologies_used.slice(0, 4).map((tech, i) => (
-                        <span key={i}>{tech}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="portfolio-card-foot">
-                    <span className="client-tag">Client: {p.client_name || "Enterprise"}</span>
-                    <button className="btn-view-details">View Details →</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Portfolio Item Detail Modal */}
-      {selectedPortfolioModal && (
-        <div className="portfolio-modal-overlay" onClick={() => setSelectedPortfolioModal(null)}>
-          <div className="portfolio-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <span className="modal-category">{selectedPortfolioModal.service_category}</span>
-                <h2>{selectedPortfolioModal.title}</h2>
-              </div>
-              <button className="modal-close-btn" onClick={() => setSelectedPortfolioModal(null)}>
                 ✕
               </button>
             </div>
 
-            <div className="modal-body">
-              {selectedPortfolioModal.thumbnail_url && (
-                <div className="modal-hero-img-wrap">
-                  <img src={selectedPortfolioModal.thumbnail_url} alt={selectedPortfolioModal.title} />
-                </div>
-              )}
-              <div className="modal-meta-row">
-                <div>
-                  <strong>Client</strong>
-                  <span>{selectedPortfolioModal.client_name || "Confidential Enterprise Client"}</span>
-                </div>
-                {selectedPortfolioModal.completion_date && (
-                  <div>
-                    <strong>Completed</strong>
-                    <span>{selectedPortfolioModal.completion_date}</span>
-                  </div>
-                )}
+            <div className="drawer-ai-banner" onClick={() => { closeMobileMenu(); setAiModalOpen(true); }}>
+              <div className="drawer-ai-badge">
+                <span>✦</span>
+                <strong>Meet Phoenix AI</strong>
               </div>
-
-              <h4>Overview</h4>
-              <p className="modal-full-desc">{selectedPortfolioModal.description}</p>
-
-              {selectedPortfolioModal.technologies_used && (
-                <div className="modal-tech-section">
-                  <h4>Technologies & Tools</h4>
-                  <div className="portfolio-tech-list">
-                    {selectedPortfolioModal.technologies_used.map((t, i) => (
-                      <span key={i}>{t}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <p>Launch our smart digital assistant for instant answers & project guidance.</p>
+              <button className="drawer-ai-cta">Start Chat Now →</button>
             </div>
 
-            <div className="modal-footer">
-              <a href="#contact" className="modal-enquire-btn" onClick={() => setSelectedPortfolioModal(null)}>
-                Inquire About Similar Project →
+            <nav className="drawer-links">
+              <a href="#hero" onClick={closeMobileMenu}>
+                <span className="drawer-link-icon">⚡</span> Home
               </a>
-            </div>
-          </div>
-        </div>
-      )}
+              <a href="#services" onClick={closeMobileMenu}>
+                <span className="drawer-link-icon">🌐</span> Services
+              </a>
+              <a href="#projects" onClick={closeMobileMenu}>
+                <span className="drawer-link-icon">📁</span> Projects
+              </a>
+              <a href="#about" onClick={closeMobileMenu}>
+                <span className="drawer-link-icon">🛡️</span> About Phoenix
+              </a>
+              <a href="#contact" onClick={closeMobileMenu}>
+                <span className="drawer-link-icon">✉️</span> Contact Us
+              </a>
+            </nav>
 
-      {/* =====================================================
-          PROCESS SECTION (How Phoenix Works)
-      ===================================================== */}
-      <section id="process" className="home-section process-section">
-        <div className="home-container">
-          <div className="section-header">
-            <span className="section-eyebrow">HOW WE WORK</span>
-            <h2>Transparent Delivery in 4 Steps</h2>
-            <p>
-              From initial request to final handover, every milestone is visible in your client portal.
-            </p>
-          </div>
-
-          <div className="process-grid">
-            <div className="process-card">
-              <div className="process-step-pill">Step 01</div>
-              <h3>Submit Your Request</h3>
-              <p>
-                Describe your project, choose the relevant service, set priorities, and attach requirements directly through the portal.
-              </p>
-            </div>
-
-            <div className="process-card">
-              <div className="process-step-pill">Step 02</div>
-              <h3>Manager Review & Scoping</h3>
-              <p>
-                Your dedicated manager reviews the scope, allocates specialists, builds project milestones, and sets delivery dates.
-              </p>
-            </div>
-
-            <div className="process-card">
-              <div className="process-step-pill">Step 03</div>
-              <h3>Production & Milestones</h3>
-              <p>
-                Track live progress, review intermediate drafts and files, and collaborate transparently via centralized logs.
-              </p>
-            </div>
-
-            <div className="process-card">
-              <div className="process-step-pill">Step 04</div>
-              <h3>Verification & Handover</h3>
-              <p>
-                Final deliverables undergo quality checks before final approval, file download, and project completion.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================
-          WHY CHOOSE PHOENIX
-      ===================================================== */}
-      <section id="capabilities" className="home-section why-section">
-        <div className="home-container">
-          <div className="why-grid">
-            <div className="why-content">
-              <span className="section-eyebrow">THE PHOENIX ADVANTAGE</span>
-              <h2>A True Enterprise Portal Built for Transparency</h2>
-              <p>
-                Unlike fragmented communication through emails and chat threads, Phoenix centralizes all assets, deliverables, timelines, and communications under one secure roof.
-              </p>
-
-              <div className="why-features-list">
-                <div className="why-feature-row">
-                  <div className="feature-check">✓</div>
-                  <div>
-                    <strong>Full Visibility for Customers</strong>
-                    <p>Track request status from Submitted, In Progress, to Complete in real-time.</p>
-                  </div>
-                </div>
-
-                <div className="why-feature-row">
-                  <div className="feature-check">✓</div>
-                  <div>
-                    <strong>Empowered Managers</strong>
-                    <p>Equipped with project scoping, resource allocation, and progress metrics.</p>
-                  </div>
-                </div>
-
-                <div className="why-feature-row">
-                  <div className="feature-check">✓</div>
-                  <div>
-                    <strong>Enterprise Security & Storage</strong>
-                    <p>Cloud-backed file storage with role-based Row Level Security (RLS).</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="why-cta">
-                <Link to={sessionUser ? getDashboardPath() : "/register"} className="home-btn-primary">
-                  {sessionUser ? "Launch Your Workspace" : "Open Your Free Account"}
+            <div className="drawer-auth-section">
+              <span className="drawer-section-title">Authorized Portals</span>
+              <div className="drawer-auth-buttons">
+                <Link to="/login" className="drawer-auth-btn manager" onClick={closeMobileMenu}>
+                  Manager Login
+                </Link>
+                <Link to="/login" className="drawer-auth-btn admin" onClick={closeMobileMenu}>
+                  Admin Login
                 </Link>
               </div>
             </div>
-
-            <div className="why-visual">
-              <div className="why-card-mockup">
-                <div className="mockup-header">
-                  <div className="mockup-dot red" />
-                  <div className="mockup-dot yellow" />
-                  <div className="mockup-dot green" />
-                  <span className="mockup-title">Phoenix Workspace Overview</span>
-                </div>
-                <div className="mockup-body">
-                  <div className="mockup-stat-row">
-                    <div className="mini-stat">
-                      <span>Service Requests</span>
-                      <strong>Active</strong>
-                    </div>
-                    <div className="mini-stat">
-                      <span>Quality Review</span>
-                      <strong>100% Verified</strong>
-                    </div>
-                  </div>
-                  <div className="mockup-item">
-                    <span className="mockup-item-icon">🌐</span>
-                    <div className="mockup-item-info">
-                      <div className="mockup-bar long" />
-                      <div className="mockup-bar short" />
-                    </div>
-                    <span className="mockup-tag">In Progress</span>
-                  </div>
-                  <div className="mockup-item">
-                    <span className="mockup-item-icon">📐</span>
-                    <div className="mockup-item-info">
-                      <div className="mockup-bar long" />
-                      <div className="mockup-bar short" />
-                    </div>
-                    <span className="mockup-tag complete">Completed</span>
-                  </div>
-                  <div className="mockup-item">
-                    <span className="mockup-item-icon">🎨</span>
-                    <div className="mockup-item-info">
-                      <div className="mockup-bar long" />
-                      <div className="mockup-bar short" />
-                    </div>
-                    <span className="mockup-tag review">In Review</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* =====================================================
-          CONTACT / INQUIRY SECTION (Public Without Login)
-      ===================================================== */}
-      <section id="contact" className="home-section contact-section">
-        <div className="home-container">
-          <div className="contact-box-grid">
-            <div className="contact-info-col">
-              <span className="section-eyebrow light">GET IN TOUCH</span>
-              <h2>Start a Project With Phoenix</h2>
-              <p>
-                Have a project or deliverable in mind? You don't need an account to reach out. Fill in your details below and a senior manager will review your inquiry immediately.
-              </p>
-
-              <div className="contact-features-list">
-                <div className="contact-pill-item">
-                  <span className="pill-icon">📍</span>
-                  <div>
-                    <strong>Phoenix Global Headquarters</strong>
-                    <span>Enterprise IT & Creative Production Labs</span>
-                  </div>
-                </div>
-
-                <div className="contact-pill-item">
-                  <span className="pill-icon">⚡</span>
-                  <div>
-                    <strong>Rapid Scoping & Consultation</strong>
-                    <span>Initial project assessment within 24 hours</span>
-                  </div>
-                </div>
-
-                <div className="contact-pill-item">
-                  <span className="pill-icon">🛡️</span>
-                  <div>
-                    <strong>Confidential NDA Assurance</strong>
-                    <span>All customer designs and schematics remain strictly protected</span>
-                  </div>
-                </div>
+      <main>
+        {/* =====================================================
+            5. HOMEPAGE HERO SECTION
+        ===================================================== */}
+        <section id="hero" className="home-hero">
+          <div className="home-container hero-container">
+            {/* Left Content Column */}
+            <div className="hero-content">
+              {/* Official AI Headline Badge */}
+              <div
+                className="hero-ai-badge"
+                onClick={() => setAiModalOpen(true)}
+                title="Click to interact with Phoenix AI"
+              >
+                <span className="hero-badge-sparkle">✦</span>
+                <span className="hero-badge-text">Meet Phoenix AI – Your Smart Digital Assistant</span>
+                <span className="hero-badge-arrow">→</span>
               </div>
 
-              <div className="existing-account-hint">
-                <span>Already have a client account?</span>
-                <Link to="/login" className="link-signin">
-                  Sign In to Client Portal →
-                </Link>
+              {/* Main Heading */}
+              <h1 className="hero-main-title">
+                PHOENIX <span className="title-gradient-gold">SOLUTIONS</span>
+              </h1>
+
+              {/* Subheading */}
+              <h2 className="hero-subheading">
+                Creating Beyond Limits
+              </h2>
+
+              {/* Description */}
+              <p className="hero-description">
+                Get instant answers, explore our services and connect with Phoenix Solutions through an intelligent AI-powered experience. From high-throughput cloud architectures to precision 3D blueprints and viral digital campaigns.
+              </p>
+
+              {/* Two Mandatory Buttons */}
+              <div className="hero-cta-group">
+                <button
+                  className="hero-btn-primary"
+                  onClick={() => setAiModalOpen(true)}
+                >
+                  <span className="btn-sparkle">✦</span>
+                  <span>Start Chat Now</span>
+                </button>
+
+                <a href="#services" className="hero-btn-secondary">
+                  <span>Explore Our Services</span>
+                  <span className="btn-arrow">↓</span>
+                </a>
+              </div>
+
+              {/* Trust Metric Pillars */}
+              <div className="hero-metrics-grid">
+                <div className="hero-metric-card">
+                  <span className="metric-val">100%</span>
+                  <span className="metric-lbl">Public Access • No Login Required</span>
+                </div>
+                <div className="hero-metric-card">
+                  <span className="metric-val">24h</span>
+                  <span className="metric-lbl">Senior Manager Project Review</span>
+                </div>
+                <div className="hero-metric-card">
+                  <span className="metric-val">3D & AI</span>
+                  <span className="metric-lbl">Next-Gen Digital Experience</span>
+                </div>
               </div>
             </div>
 
-            <div className="contact-form-col">
-              <form onSubmit={handleEnquirySubmit} className="public-enquiry-card">
-                <h3>Submit a Project Inquiry</h3>
-                <p>No login or registration required.</p>
+            {/* Right Column: 3D Phoenix Emblem */}
+            <div className="hero-visual-col">
+              <Phoenix3DHero onOpenAI={() => setAiModalOpen(true)} />
+            </div>
+          </div>
+        </section>
 
-                {enquiryStatus.text && (
-                  <div className={`enquiry-alert ${enquiryStatus.type}`}>
-                    {enquiryStatus.text}
+        {/* =====================================================
+            9. SERVICES SECTION
+        ===================================================== */}
+        <section id="services" className="home-section services-section">
+          <div className="home-container">
+            <div className="section-header">
+              <div className="section-pill">
+                <span>✦</span>
+                <span>CORE CAPABILITIES</span>
+              </div>
+              <h2 className="section-title">
+                Comprehensive IT & <span className="title-gradient-blue">Creative Services</span>
+              </h2>
+              <p className="section-subtitle">
+                Engineered with precision. Delivered by specialized senior teams. Explore our end-to-end capabilities designed to take your enterprise beyond conventional limits.
+              </p>
+            </div>
+
+            {/* Responsive Services Grid (4/3 col Desktop, 2 col Tablet, 1 col Mobile) */}
+            <div className="services-grid">
+              {(services.length > 0 ? services : coreHighlights).map((item, idx) => {
+                const meta = coreHighlights[idx % coreHighlights.length];
+                return (
+                  <div key={item.id || idx} className="service-card">
+                    <div className="service-card-glow" />
+                    <div className="service-card-top">
+                      <div className="service-icon-box">
+                        <span>{meta.icon}</span>
+                      </div>
+                      <span className="service-badge">{meta.tag || meta.category}</span>
+                    </div>
+
+                    <h3 className="service-title">{item.name || item.title}</h3>
+                    <p className="service-desc">
+                      {item.description || item.desc}
+                    </p>
+
+                    <div className="service-footer">
+                      <a href="#contact" className="service-learn-btn">
+                        <span>Learn More & Enquire</span>
+                        <span className="service-btn-arrow">→</span>
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            9. PROJECTS / PORTFOLIO SECTION
+        ===================================================== */}
+        <section id="projects" className="home-section projects-section">
+          <div className="home-container">
+            <div className="section-header">
+              <div className="section-pill">
+                <span>✦</span>
+                <span>VERIFIED DELIVERABLES</span>
+              </div>
+              <h2 className="section-title">
+                Featured <span className="title-gradient-gold">Client Projects</span>
+              </h2>
+              <p className="section-subtitle">
+                Explore real deliverables crafted by Phoenix specialists. Every project represents our commitment to modern architecture, technical resilience, and premium execution.
+              </p>
+            </div>
+
+            {loadingPortfolio ? (
+              <div className="projects-loading">
+                <div className="loading-spinner" />
+                <p>Loading curated portfolio showcase...</p>
+              </div>
+            ) : (
+              <div className="projects-grid">
+                {(portfolioProjects.length > 0 ? portfolioProjects : fallbackProjects).map((p) => (
+                  <div
+                    key={p.id}
+                    className="project-card"
+                    onClick={() => setSelectedPortfolioModal(p)}
+                  >
+                    <div className="project-thumbnail-box">
+                      {p.thumbnail_url ? (
+                        <img src={p.thumbnail_url} alt={p.title} className="project-thumb-img" />
+                      ) : (
+                        <div className="project-thumb-placeholder">
+                          <span className="project-thumb-icon">{p.icon || "💎"}</span>
+                          <span className="project-thumb-label">{p.service_category || "Phoenix Showcase"}</span>
+                        </div>
+                      )}
+                      <span className="project-category-tag">{p.service_category || "Enterprise"}</span>
+                    </div>
+
+                    <div className="project-content">
+                      <h3 className="project-title">{p.title}</h3>
+                      <p className="project-desc">
+                        {p.description?.length > 120 ? `${p.description.substring(0, 120)}...` : p.description}
+                      </p>
+
+                      {p.technologies_used && p.technologies_used.length > 0 && (
+                        <div className="project-tech-tags">
+                          {p.technologies_used.slice(0, 4).map((tech, i) => (
+                            <span key={i} className="tech-tag">{tech}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="project-card-footer">
+                        <span className="project-client">Client: {p.client_name || "Enterprise"}</span>
+                        <button className="project-view-btn">
+                          <span>View Project</span>
+                          <span>→</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Project Detail Modal */}
+        {selectedPortfolioModal && (
+          <div className="project-modal-backdrop" onClick={() => setSelectedPortfolioModal(null)}>
+            <div className="project-modal-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="project-modal-header">
+                <div>
+                  <span className="modal-category-badge">{selectedPortfolioModal.service_category}</span>
+                  <h3 className="modal-title">{selectedPortfolioModal.title}</h3>
+                </div>
+                <button
+                  className="modal-close"
+                  onClick={() => setSelectedPortfolioModal(null)}
+                  aria-label="Close modal"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="project-modal-body">
+                {selectedPortfolioModal.thumbnail_url && (
+                  <div className="modal-img-wrap">
+                    <img src={selectedPortfolioModal.thumbnail_url} alt={selectedPortfolioModal.title} />
                   </div>
                 )}
 
-                <div className="form-row-two">
-                  <div className="form-field">
-                    <label>Your Name *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Sarah Jenkins"
-                      value={enquiryForm.name}
-                      onChange={(e) => setEnquiryForm({ ...enquiryForm, name: e.target.value })}
-                    />
+                <div className="modal-meta-bar">
+                  <div className="modal-meta-item">
+                    <span className="meta-lbl">Client</span>
+                    <strong className="meta-val">{selectedPortfolioModal.client_name || "Confidential Enterprise Client"}</strong>
                   </div>
-
-                  <div className="form-field">
-                    <label>Your Email Address *</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="e.g. sarah@company.com"
-                      value={enquiryForm.email}
-                      onChange={(e) => setEnquiryForm({ ...enquiryForm, email: e.target.value })}
-                    />
+                  {selectedPortfolioModal.completion_date && (
+                    <div className="modal-meta-item">
+                      <span className="meta-lbl">Delivered</span>
+                      <strong className="meta-val">{selectedPortfolioModal.completion_date}</strong>
+                    </div>
+                  )}
+                  <div className="modal-meta-item">
+                    <span className="meta-lbl">Quality Audit</span>
+                    <strong className="meta-val status-green">✓ Verified & Approved</strong>
                   </div>
                 </div>
 
-                <div className="form-row-two">
-                  <div className="form-field">
-                    <label>Phone Number (Optional)</label>
-                    <input
-                      type="tel"
-                      placeholder="e.g. +1 (555) 019-2834"
-                      value={enquiryForm.phone}
-                      onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
-                    />
+                <div className="modal-text-block">
+                  <h4>Project Overview</h4>
+                  <p>{selectedPortfolioModal.description}</p>
+                </div>
+
+                {selectedPortfolioModal.technologies_used && (
+                  <div className="modal-text-block">
+                    <h4>Technologies & Architecture</h4>
+                    <div className="project-tech-tags">
+                      {selectedPortfolioModal.technologies_used.map((t, idx) => (
+                        <span key={idx} className="tech-tag">{t}</span>
+                      ))}
+                    </div>
                   </div>
+                )}
+              </div>
 
-                  <div className="form-field">
-                    <label>Company / Organization</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Acme Corp"
-                      value={enquiryForm.company}
-                      onChange={(e) => setEnquiryForm({ ...enquiryForm, company: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-field">
-                  <label>Service Area of Interest</label>
-                  <select
-                    value={enquiryForm.serviceCategory}
-                    onChange={(e) => setEnquiryForm({ ...enquiryForm, serviceCategory: e.target.value })}
-                  >
-                    <option value="">Select a service category...</option>
-                    <option value="Web Development">Web Development</option>
-                    <option value="App Development">App Development</option>
-                    <option value="UI/UX Design">UI/UX Design</option>
-                    <option value="3D Design & Blueprints">3D Design & Blueprints</option>
-                    <option value="Advertisement Creation">Advertisement Creation</option>
-                    <option value="Video Editing">Video Editing</option>
-                    <option value="Meme Creation">Viral Marketing & Memes</option>
-                    <option value="Other">Other Custom Service</option>
-                  </select>
-                </div>
-
-                <div className="form-field">
-                  <label>Project Details / Message *</label>
-                  <textarea
-                    required
-                    rows={4}
-                    placeholder="Tell us about your requirements, project goals, estimated timelines, or budget..."
-                    value={enquiryForm.message}
-                    onChange={(e) => setEnquiryForm({ ...enquiryForm, message: e.target.value })}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn-submit-enquiry"
-                  disabled={submittingEnquiry}
+              <div className="project-modal-footer">
+                <a
+                  href="#contact"
+                  className="modal-cta-btn"
+                  onClick={() => setSelectedPortfolioModal(null)}
                 >
-                  {submittingEnquiry ? "Sending Inquiry..." : "Send Project Inquiry →"}
-                </button>
-              </form>
+                  Inquire About Similar Project →
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        )}
+
+        {/* =====================================================
+            ABOUT SECTION (Enterprise Advantage & Transparency)
+        ===================================================== */}
+        <section id="about" className="home-section about-section">
+          <div className="home-container">
+            <div className="about-grid">
+              <div className="about-content">
+                <div className="section-pill">
+                  <span>✦</span>
+                  <span>ABOUT PHOENIX</span>
+                </div>
+                <h2 className="section-title">
+                  Pioneering Solutions <span className="title-gradient-gold">Without Boundaries</span>
+                </h2>
+                <p className="about-lead">
+                  Phoenix Solutions was created on a single conviction: extraordinary digital engineering should be transparent, accessible, and limitless.
+                </p>
+                <p className="about-body">
+                  We unite full-stack software architects, spatial 3D modelers, and viral creative engineers under one cohesive organization. Whether you are launching a global SaaS portal or constructing architectural blueprint schematics, Phoenix brings clarity and speed to execution.
+                </p>
+
+                <div className="about-pillars">
+                  <div className="pillar-item">
+                    <div className="pillar-icon">🛡️</div>
+                    <div className="pillar-info">
+                      <strong>NDA Guaranteed & Confidential</strong>
+                      <span>All schematics, source code, and assets are shielded by enterprise-grade confidentiality.</span>
+                    </div>
+                  </div>
+
+                  <div className="pillar-item">
+                    <div className="pillar-icon">⚡</div>
+                    <div className="pillar-info">
+                      <strong>Rapid Scoping & Direct Manager Contact</strong>
+                      <span>No robotic delays. Dedicated managers oversee milestones and verify deliverables.</span>
+                    </div>
+                  </div>
+
+                  <div className="pillar-item">
+                    <div className="pillar-icon">🌐</div>
+                    <div className="pillar-info">
+                      <strong>Direct Public Access</strong>
+                      <span>Explore freely, chat with Phoenix AI, and request proposals with zero registration barriers.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Visual: Holographic Glass Feature Showcase */}
+              <div className="about-visual-card">
+                <div className="about-card-inner">
+                  <div className="about-logo-badge">
+                    <img src={phoenixLogo} alt="Phoenix Crest" className="about-crest-img" />
+                  </div>
+                  <h3 className="about-card-title">PHOENIX DIGITAL LABS</h3>
+                  <span className="about-card-tag">Enterprise Ecosystem</span>
+
+                  <div className="about-stat-row">
+                    <div className="about-stat-box">
+                      <span className="stat-big">7+</span>
+                      <span className="stat-sub">Core Disciplines</span>
+                    </div>
+                    <div className="about-stat-box">
+                      <span className="stat-big">100%</span>
+                      <span className="stat-sub">Delivery Record</span>
+                    </div>
+                  </div>
+
+                  <div className="about-quote-box">
+                    <p>"Creating Beyond Limits is not just our motto — it is the engineering standard behind every line of code and every render we produce."</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            10. CONTACT SECTION (Public Without Login)
+        ===================================================== */}
+        <section id="contact" className="home-section contact-section">
+          <div className="home-container">
+            <div className="contact-wrapper-grid">
+              {/* Left Contact Information */}
+              <div className="contact-info-col">
+                <div className="section-pill">
+                  <span>✦</span>
+                  <span>GET IN TOUCH</span>
+                </div>
+                <h2 className="section-title">
+                  Let's Build Something <span className="title-gradient-blue">Extraordinary</span>
+                </h2>
+                <p className="contact-lead">
+                  Have a project, 3D blueprint, or digital campaign in mind? You do not need to register or log in. Submit your inquiry below and our senior management team will contact you promptly.
+                </p>
+
+                <div className="contact-cards-list">
+                  <div className="contact-detail-card">
+                    <div className="detail-icon">📍</div>
+                    <div className="detail-meta">
+                      <strong>Global Headquarters</strong>
+                      <span>Phoenix Solutions Digital & 3D Engineering Labs</span>
+                    </div>
+                  </div>
+
+                  <div className="contact-detail-card">
+                    <div className="detail-icon">⚡</div>
+                    <div className="detail-meta">
+                      <strong>Immediate Scoping</strong>
+                      <span>Initial project assessment within 24 business hours</span>
+                    </div>
+                  </div>
+
+                  <div className="contact-detail-card">
+                    <div className="detail-icon">💬</div>
+                    <div className="detail-meta">
+                      <strong>Interactive AI Assistant</strong>
+                      <span>Use Phoenix AI for real-time guidance before submitting</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="contact-ai-trigger-box">
+                  <button
+                    className="contact-ai-trigger-btn"
+                    onClick={() => setAiModalOpen(true)}
+                  >
+                    <span>✦</span> Ask Phoenix AI for Recommendations
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Form Column */}
+              <div className="contact-form-col">
+                <div className="contact-form-card">
+                  <div className="form-card-header">
+                    <h3>Submit a Project Enquiry</h3>
+                    <p>Free consultation • No account or login required</p>
+                  </div>
+
+                  {enquiryStatus.text && (
+                    <div className={`enquiry-alert alert-${enquiryStatus.type}`} role="alert">
+                      {enquiryStatus.type === "success" ? "✓ " : "⚠ "}
+                      {enquiryStatus.text}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleEnquirySubmit} className="enquiry-form">
+                    <div className="form-grid-2">
+                      <div className="form-group">
+                        <label htmlFor="enq-name">Your Full Name *</label>
+                        <input
+                          id="enq-name"
+                          type="text"
+                          required
+                          placeholder="e.g. Elena Rostova"
+                          value={enquiryForm.name}
+                          onChange={(e) => setEnquiryForm({ ...enquiryForm, name: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="enq-email">Email Address *</label>
+                        <input
+                          id="enq-email"
+                          type="email"
+                          required
+                          placeholder="e.g. elena@company.com"
+                          value={enquiryForm.email}
+                          onChange={(e) => setEnquiryForm({ ...enquiryForm, email: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-grid-2">
+                      <div className="form-group">
+                        <label htmlFor="enq-phone">Phone Number (Optional)</label>
+                        <input
+                          id="enq-phone"
+                          type="tel"
+                          placeholder="e.g. +1 (555) 019-2834"
+                          value={enquiryForm.phone}
+                          onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="enq-subj">Subject / Organization</label>
+                        <input
+                          id="enq-subj"
+                          type="text"
+                          placeholder="e.g. Next-Gen Web Portal"
+                          value={enquiryForm.subject}
+                          onChange={(e) => setEnquiryForm({ ...enquiryForm, subject: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="enq-service">Service Area of Interest</label>
+                      <select
+                        id="enq-service"
+                        value={enquiryForm.serviceCategory}
+                        onChange={(e) => setEnquiryForm({ ...enquiryForm, serviceCategory: e.target.value })}
+                      >
+                        <option value="">Select a service category...</option>
+                        <option value="Web & Cloud Development">Web & Cloud Development</option>
+                        <option value="Mobile App Development">Mobile App Development</option>
+                        <option value="UI/UX & Design Systems">UI/UX & Design Systems</option>
+                        <option value="3D Design & Blueprints">3D Design & Blueprints</option>
+                        <option value="Advertisement Creation">Advertisement Creation</option>
+                        <option value="Video Editing & Motion">Video Editing & Motion</option>
+                        <option value="Viral Marketing & Memes">Viral Marketing & Memes</option>
+                        <option value="Custom Enterprise Solution">Custom Enterprise Solution</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="enq-msg">Project Requirements & Timeline *</label>
+                      <textarea
+                        id="enq-msg"
+                        required
+                        rows={4}
+                        placeholder="Describe your vision, deliverables, budget range, or estimated launch date..."
+                        value={enquiryForm.message}
+                        onChange={(e) => setEnquiryForm({ ...enquiryForm, message: e.target.value })}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="form-submit-btn"
+                      disabled={submittingEnquiry}
+                    >
+                      {submittingEnquiry ? (
+                        <span>Sending Enquiry...</span>
+                      ) : (
+                        <>
+                          <span>Submit Project Enquiry</span>
+                          <span className="submit-arrow">→</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
 
       {/* =====================================================
-          FOOTER
+          13. RESPONSIVE FOOTER
       ===================================================== */}
       <footer className="home-footer">
         <div className="home-container footer-container">
           <div className="footer-brand-col">
             <div className="footer-brand">
-              <img src={phoenixLogo} alt="Phoenix" className="footer-logo-img" />
-              <span>PHOENIX</span>
+              <div className="footer-logo-box">
+                <img src={phoenixLogo} alt="Phoenix Solutions Logo" className="footer-logo-img" />
+              </div>
+              <div className="footer-brand-text">
+                <span className="footer-name">PHOENIX <span className="brand-gold">SOLUTIONS</span></span>
+                <span className="footer-tagline">Creating Beyond Limits</span>
+              </div>
             </div>
-            <p>
-              Comprehensive IT, creative engineering, design systems, and blueprint solutions for businesses.
+            <p className="footer-desc">
+              Pioneering enterprise IT, custom full-stack software, spatial 3D architectural blueprints, and viral creative media under a unified standard of excellence.
             </p>
+            <div className="footer-badge">
+              <span className="badge-sparkle">✦</span>
+              <span>Enterprise 3D & AI Ecosystem</span>
+            </div>
           </div>
 
-          <div className="footer-col">
-            <h4>Services</h4>
-            <ul>
-              <li>Web & Cloud Development</li>
-              <li>Mobile App Engineering</li>
-              <li>UI/UX Design Systems</li>
-              <li>3D Design & Blueprints</li>
-              <li>Video & Creative Media</li>
+          <div className="footer-nav-col">
+            <h4 className="footer-heading">Services</h4>
+            <ul className="footer-list">
+              <li><a href="#services">Web & Cloud Development</a></li>
+              <li><a href="#services">Mobile App Engineering</a></li>
+              <li><a href="#services">UI/UX Design Systems</a></li>
+              <li><a href="#services">3D Design & Blueprints</a></li>
+              <li><a href="#services">Video & Motion Graphics</a></li>
+              <li><a href="#services">Advertisement Creation</a></li>
             </ul>
           </div>
 
-          <div className="footer-col">
-            <h4>Portals</h4>
-            <ul>
-              <li><Link to="/login">Client Portal</Link></li>
-              <li><Link to="/login">Manager Workspace</Link></li>
-              <li><Link to="/login">Admin Center</Link></li>
-              <li><Link to="/register">Register Account</Link></li>
+          <div className="footer-nav-col">
+            <h4 className="footer-heading">Quick Links</h4>
+            <ul className="footer-list">
+              <li><a href="#hero">Home</a></li>
+              <li><a href="#services">Our Capabilities</a></li>
+              <li><a href="#projects">Project Portfolio</a></li>
+              <li><a href="#about">About Phoenix</a></li>
+              <li><a href="#contact">Contact & Quotes</a></li>
+              <li><button onClick={() => setAiModalOpen(true)} className="footer-text-btn">Phoenix AI Assistant</button></li>
             </ul>
           </div>
 
-          <div className="footer-col">
-            <h4>Platform</h4>
-            <ul>
-              <li>Enterprise Governance</li>
-              <li>Row-Level Security</li>
-              <li>Activity Audits</li>
-              <li>Asset Storage</li>
+          <div className="footer-nav-col">
+            <h4 className="footer-heading">Authorized Portals</h4>
+            <ul className="footer-list">
+              <li><Link to="/login">Manager Login</Link></li>
+              <li><Link to="/login">Admin Login</Link></li>
+              <li><Link to="/login" className="portal-sub">Secure Supabase Auth</Link></li>
+              <li><span className="portal-note">Public visitors do not need an account.</span></li>
             </ul>
           </div>
         </div>
 
-        <div className="footer-bottom">
+        <div className="footer-bottom-bar">
           <div className="home-container footer-bottom-inner">
-            <p>© {new Date().getFullYear()} Phoenix Company Portal. All rights reserved.</p>
-            <div className="footer-meta-links">
+            <p>© {new Date().getFullYear()} Phoenix Solutions. All rights reserved. Creating Beyond Limits.</p>
+            <div className="footer-legal-tags">
               <span>Enterprise Grade</span>
               <span>•</span>
-              <span>Cloud Protected</span>
+              <span>Encrypted Storage</span>
+              <span>•</span>
+              <span>Protected Cloud</span>
             </div>
           </div>
         </div>
       </footer>
+
+      {/* =====================================================
+          8. PHOENIX AI CHATBOT MODAL
+      ===================================================== */}
+      <PhoenixAIModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+      />
     </div>
   );
 }

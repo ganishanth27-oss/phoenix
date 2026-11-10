@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import logo from "../assets/phoenix-logo.png";
 import "./SplashScreen.css";
+
 function SplashScreen({ onFinish }) {
   const [loading, setLoading] = useState(false);
 
@@ -8,12 +9,12 @@ function SplashScreen({ onFinish }) {
     // Show logo first
     const loadingTimer = setTimeout(() => {
       setLoading(true);
-    }, 1500);
+    }, 1300);
 
     // Finish splash screen
     const finishTimer = setTimeout(() => {
       onFinish();
-    }, 3000);
+    }, 2800);
 
     return () => {
       clearTimeout(loadingTimer);
@@ -23,12 +24,23 @@ function SplashScreen({ onFinish }) {
 
   return (
     <div className="splash-screen">
+      <div className="splash-ambient-glow" />
+      <div className="splash-ring splash-ring-outer" />
+      <div className="splash-ring splash-ring-inner" />
+
       <div className="splash-content">
         <div className="splash-logo-box">
-          <img src={logo} alt="PHOENIX" />
+          <div className="splash-logo-halo" />
+          <img src={logo} alt="Phoenix Solutions Official Logo" />
         </div>
 
-        <h1>PHOENIX</h1>
+        <h1 className="splash-title">
+          PHOENIX <span className="splash-gold-word">SOLUTIONS</span>
+        </h1>
+
+        <p className="splash-tagline">
+          Creating Beyond Limits
+        </p>
 
         {loading ? (
           <div className="splash-loading">
@@ -37,13 +49,14 @@ function SplashScreen({ onFinish }) {
               <span></span>
               <span></span>
             </div>
-
-            <p>Initializing workspace...</p>
+            <p className="splash-status">Initializing Intelligent 3D Platform...</p>
           </div>
         ) : (
-          <p className="splash-tagline">
-            Powering work. Managing progress.
-          </p>
+          <div className="splash-badge">
+            <span className="splash-sparkle">✦</span>
+            <span>Enterprise Digital Ecosystem</span>
+            <span className="splash-sparkle">✦</span>
+          </div>
         )}
       </div>
     </div>

@@ -1,264 +1,225 @@
-/* ========================================
-   PHOENIX SPLASH SCREEN
-======================================== */
+/* =========================================================
+   PHOENIX SOLUTIONS — SPLASH SCREEN
+   Deep Navy, Crystal Phoenix Blue, Royal Gold Glow & Rings
+========================================================= */
 
 .splash-screen {
   position: fixed;
   inset: 0;
   z-index: 99999;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
-  background:
-    radial-gradient(
-      circle at center,
-      rgba(91, 92, 226, 0.18),
-      transparent 38%
-    ),
-    #15182b;
-
-  color: white;
+  background: radial-gradient(circle at center, #0a1329 0%, #030712 70%, #010409 100%);
+  color: #ffffff;
   overflow: hidden;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Background circles */
-
-.splash-screen::before {
-  content: "";
+.splash-ambient-glow {
   position: absolute;
-
-  width: 600px;
-  height: 600px;
-
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 50%;
-
-  animation: splashRotate 12s linear infinite;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.22) 0%, rgba(37, 99, 235, 0.15) 40%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  animation: pulseAmbient 4s ease-in-out infinite alternate;
 }
 
-.splash-screen::after {
-  content: "";
+/* Concentric futuristic glowing rings */
+.splash-ring {
   position: absolute;
-
-  width: 850px;
-  height: 850px;
-
-  border: 1px solid rgba(255, 255, 255, 0.035);
   border-radius: 50%;
+  pointer-events: none;
 }
 
-/* Main content */
+.splash-ring-outer {
+  width: min(85vw, 680px);
+  height: min(85vw, 680px);
+  border: 1px dashed rgba(0, 212, 255, 0.18);
+  box-shadow: 0 0 40px rgba(0, 212, 255, 0.08);
+  animation: splashSpinCW 24s linear infinite;
+}
+
+.splash-ring-inner {
+  width: min(70vw, 500px);
+  height: min(70vw, 500px);
+  border: 1px solid rgba(245, 158, 11, 0.16);
+  box-shadow: inset 0 0 30px rgba(0, 212, 255, 0.06);
+  animation: splashSpinCCW 18s linear infinite;
+}
 
 .splash-content {
   position: relative;
   z-index: 2;
-
   display: flex;
   flex-direction: column;
   align-items: center;
-
   text-align: center;
-
-  animation: splashFadeIn 0.8s ease forwards;
+  padding: 24px;
+  animation: splashContentIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Logo box */
-
+/* Official Logo Container */
 .splash-logo-box {
-  width: 135px;
-  height: 135px;
-
+  position: relative;
+  width: 140px;
+  height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  margin-bottom: 25px;
-
-  border-radius: 32px;
-
-  background: rgba(255, 255, 255, 0.07);
-
-  border: 1px solid rgba(255, 255, 255, 0.12);
-
+  margin-bottom: 24px;
+  border-radius: 36px;
+  background: linear-gradient(135deg, rgba(15, 27, 56, 0.85) 0%, rgba(30, 41, 59, 0.65) 100%);
+  border: 1.5px solid rgba(0, 212, 255, 0.4);
   box-shadow:
-    0 25px 70px rgba(0, 0, 0, 0.35),
-    0 0 50px rgba(91, 92, 226, 0.15);
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    0 0 35px rgba(0, 212, 255, 0.3),
+    inset 0 0 20px rgba(245, 158, 11, 0.15);
+  animation: splashFloat 3s ease-in-out infinite;
+}
 
-  animation: splashLogo 1.2s ease forwards;
+.splash-logo-halo {
+  position: absolute;
+  inset: -8px;
+  border-radius: 42px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  animation: haloPulse 2s ease-in-out infinite alternate;
 }
 
 .splash-logo-box img {
   width: 105px;
   height: 105px;
-
   object-fit: contain;
-
-  border-radius: 22px;
+  filter: drop-shadow(0 0 16px rgba(0, 212, 255, 0.6));
 }
 
-/* PHOENIX text */
-
-.splash-content h1 {
-  margin: 0;
-
-  font-size: 42px;
+.splash-title {
+  font-family: "Cinzel", "Plus Jakarta Sans", serif;
+  font-size: clamp(26px, 5vw, 36px);
   font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #f8fafc;
+  margin: 0 0 8px;
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.45);
+}
 
-  letter-spacing: 5px;
-
-  animation: splashText 1s ease forwards;
+.splash-gold-word {
+  color: #fbbf24;
+  text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
 }
 
 .splash-tagline {
-  margin: 12px 0 0;
-
-  color: #aeb3c9;
-
-  font-size: 14px;
-  letter-spacing: 0.5px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(13px, 3vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin: 0 0 24px;
 }
-
-/* Loading */
 
 .splash-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
-
-  margin-top: 22px;
-
-  animation: loadingAppear 0.5s ease forwards;
+  gap: 12px;
 }
 
 .loading-dots {
   display: flex;
-  align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .loading-dots span {
-  width: 7px;
-  height: 7px;
-
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-
-  background: #7778f5;
-
-  animation: loadingDot 1.2s infinite ease-in-out;
+  background: #00d4ff;
+  box-shadow: 0 0 10px #00d4ff;
+  animation: bounceDot 1.2s infinite ease-in-out;
 }
 
 .loading-dots span:nth-child(2) {
-  animation-delay: 0.15s;
+  animation-delay: 0.2s;
+  background: #3b82f6;
+  box-shadow: 0 0 10px #3b82f6;
 }
 
 .loading-dots span:nth-child(3) {
-  animation-delay: 0.3s;
+  animation-delay: 0.4s;
+  background: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
 }
 
-.splash-loading p {
-  margin: 12px 0 0;
-
-  color: #858ba5;
-
+.splash-status {
   font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #38bdf8;
+  margin: 0;
 }
 
-/* ========================================
-   ANIMATIONS
-======================================== */
-
-@keyframes splashFadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+.splash-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #cbd5e1;
 }
 
-@keyframes splashLogo {
-  from {
-    opacity: 0;
-    transform: scale(0.75);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.splash-sparkle {
+  color: #fbbf24;
 }
 
-@keyframes splashText {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes splashSpinCW {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-@keyframes loadingAppear {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+@keyframes splashSpinCCW {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
 }
 
-@keyframes loadingDot {
-  0%,
-  60%,
-  100% {
-    opacity: 0.3;
-    transform: translateY(0);
-  }
-
-  30% {
-    opacity: 1;
-    transform: translateY(-5px);
-  }
+@keyframes splashFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
-@keyframes splashRotate {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+@keyframes haloPulse {
+  0% { transform: scale(0.98); opacity: 0.4; }
+  100% { transform: scale(1.04); opacity: 0.9; }
 }
 
-/* ========================================
-   MOBILE
-======================================== */
+@keyframes pulseAmbient {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.15); opacity: 0.9; }
+}
 
-@media (max-width: 600px) {
+@keyframes bounceDot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1.2); opacity: 1; }
+}
+
+@keyframes splashContentIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 480px) {
   .splash-logo-box {
-    width: 110px;
-    height: 110px;
-    border-radius: 27px;
+    width: 115px;
+    height: 115px;
+    border-radius: 28px;
   }
-
   .splash-logo-box img {
     width: 85px;
     height: 85px;
-  }
-
-  .splash-content h1 {
-    font-size: 32px;
-    letter-spacing: 4px;
-  }
-
-  .splash-tagline {
-    font-size: 12px;
   }
 }
