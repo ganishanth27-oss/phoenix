@@ -1,0 +1,443 @@
+/* =====================================================
+   ADMIN QR CODE SETTINGS — PHOENIX ENTERPRISE THEME
+   Colors: #030914, #071426, #00D9FF, #1769FF, #FFC928
+===================================================== */
+
+.admin-qr-page {
+  padding: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-qr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.qr-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #00d9ff;
+  text-transform: uppercase;
+}
+
+.admin-qr-header h1 {
+  margin: 6px 0 6px;
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.admin-qr-header p {
+  margin: 0;
+  font-size: 14px;
+  color: #a9b7ca;
+}
+
+.qr-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(7, 20, 38, 0.8);
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-active {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+.dot-inactive {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.qr-alert-box {
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qr-alert-box.success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.qr-alert-box.error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* Grid Layout */
+.admin-qr-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 28px;
+}
+
+.qr-form-card,
+.qr-preview-card {
+  background: rgba(7, 20, 38, 0.7);
+  border: 1px solid rgba(0, 217, 255, 0.16);
+  border-radius: 18px;
+  padding: 28px;
+  backdrop-filter: blur(12px);
+}
+
+.qr-form-card h2,
+.qr-preview-card h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.section-subtext {
+  margin: 0 0 24px;
+  font-size: 13px;
+  color: #a9b7ca;
+}
+
+.qr-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.req-star {
+  color: #ffc928;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  border-radius: 9px;
+  padding: 11px 14px;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #00d9ff;
+  box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.15);
+}
+
+.field-hint {
+  font-size: 11px;
+  color: #8da2be;
+  margin-top: 2px;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.save-qr-btn {
+  margin-top: 10px;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, #00d9ff 0%, #1769ff 100%);
+  color: #030914;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+}
+
+.save-qr-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 217, 255, 0.35);
+}
+
+.save-qr-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Preview Box */
+.qr-render-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(3, 9, 20, 0.65);
+  border: 1px solid rgba(0, 217, 255, 0.12);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.qr-frame {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.live-qr-img {
+  width: 200px;
+  height: 200px;
+  display: block;
+}
+
+.qr-meta-info {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.payee-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.upi-id-badge {
+  padding: 4px 12px;
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  border-radius: 20px;
+  font-size: 13px;
+  font-family: monospace;
+  color: #00d9ff;
+  font-weight: 600;
+}
+
+.qr-mode-tag {
+  font-size: 11px;
+  color: #ffc928;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-amount-adjust {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #a9b7ca;
+}
+
+.preview-amount-adjust input {
+  width: 100px;
+  padding: 6px 8px;
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-radius: 6px;
+  border: 1px solid #00d9ff;
+  font-weight: 700;
+}
+
+.qr-instructions-preview {
+  margin-top: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(7, 20, 38, 0.8);
+  border: 1px solid rgba(0, 217, 255, 0.1);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.qr-instructions-preview strong {
+  display: block;
+  font-size: 12px;
+  color: #ffc928;
+  margin-bottom: 6px;
+}
+
+.qr-instructions-preview pre {
+  margin: 0;
+  font-family: inherit;
+  font-size: 12px;
+  color: #cbd5e1;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.qr-security-notice {
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 201, 40, 0.08);
+  border: 1px solid rgba(255, 201, 40, 0.2);
+  border-radius: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sec-icon {
+  font-size: 18px;
+}
+
+.qr-security-notice strong {
+  display: block;
+  font-size: 12px;
+  color: #ffc928;
+  margin-bottom: 2px;
+}
+
+.qr-security-notice p {
+  margin: 0;
+  font-size: 11px;
+  color: #a9b7ca;
+  line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .admin-qr-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-qr-page {
+    padding: 16px;
+  }
+  .form-row-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Admin QR Upload Specific Zone */
+.admin-qr-upload-zone {
+  background: rgba(3, 9, 20, 0.7);
+  border: 2px dashed rgba(0, 217, 255, 0.4);
+  border-radius: 14px;
+  padding: 22px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.zone-icon {
+  font-size: 32px;
+}
+
+.zone-text strong {
+  display: block;
+  font-size: 14px;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.zone-text p {
+  margin: 0;
+  font-size: 12px;
+  color: #8da2be;
+}
+
+.upload-btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.browse-qr-btn {
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #00d9ff 0%, #1769ff 100%);
+  color: #030914;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-block;
+  transition: all 0.2s ease;
+}
+
+.browse-qr-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 217, 255, 0.35);
+}
+
+.remove-qr-btn {
+  padding: 9px 14px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.attached-badge {
+  font-size: 12px;
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.preview-status-strip {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.txt-green {
+  color: #4ade80 !important;
+}
+
+.txt-red {
+  color: #f87171 !important;
+}

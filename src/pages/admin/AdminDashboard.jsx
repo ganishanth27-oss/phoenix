@@ -14,6 +14,8 @@ function AdminDashboard() {
     users: 0,
     projects: 0,
     services: 0,
+    requests: 0,
+    tasks: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -62,6 +64,8 @@ function AdminDashboard() {
         usersResult,
         projectsResult,
         servicesResult,
+        requestsResult,
+        tasksResult,
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -83,6 +87,14 @@ function AdminDashboard() {
           .from("services")
           .select("id", { count: "exact", head: true })
           .eq("status", "active"),
+
+        supabase
+          .from("user_requests")
+          .select("id", { count: "exact", head: true }),
+
+        supabase
+          .from("tasks")
+          .select("id", { count: "exact", head: true }),
       ]);
 
       setStats({
@@ -90,6 +102,8 @@ function AdminDashboard() {
         users: usersResult.count || 0,
         projects: projectsResult.count || 0,
         services: servicesResult.count || 0,
+        requests: requestsResult.count || 0,
+        tasks: tasksResult.count || 0,
       });
     } catch (error) {
       console.error(error);
@@ -108,17 +122,17 @@ function AdminDashboard() {
       label: "MAIN MENU",
       items: [
         {
-          label: "Dashboard",
+          label: "Dashboard Overview",
           path: "/admin",
           icon: "⌂",
         },
         {
-          label: "Requests",
+          label: "User Requests",
           path: "/admin/requests",
           icon: "▣",
         },
         {
-          label: "Projects",
+          label: "Project Management",
           path: "/admin/projects",
           icon: "◈",
         },
@@ -141,16 +155,47 @@ function AdminDashboard() {
     },
 
     {
+      label: "FINANCIAL & PAYMENTS",
+      items: [
+        {
+          label: "Payment & Advance Management",
+          path: "/admin/payments",
+          icon: "💳",
+        },
+        {
+          label: "QR Code Management",
+          path: "/admin/qr-settings",
+          icon: "📱",
+        },
+        {
+          label: "Payment Proof Verification",
+          path: "/admin/proofs",
+          icon: "🛡️",
+        },
+        {
+          label: "Invoices & Receipts",
+          path: "/admin/invoices",
+          icon: "📄",
+        },
+        {
+          label: "Financial Reports",
+          path: "/admin/reports",
+          icon: "📊",
+        },
+      ],
+    },
+
+    {
       label: "MANAGEMENT",
       items: [
         {
-          label: "Managers",
-          path: "/admin/managers",
-          icon: "♙",
+          label: "Customer Management",
+          path: "/admin/users",
+          icon: "👥",
         },
         {
-          label: "Users",
-          path: "/admin/users",
+          label: "Managers",
+          path: "/admin/managers",
           icon: "♙",
         },
         {
@@ -302,6 +347,38 @@ function AdminDashboard() {
 
             <p>
               Active company services
+            </p>
+          </div>
+
+          <div className="admin-stat-card cyan-card">
+            <div className="stat-card-top">
+              <div className="stat-icon">
+                ▣
+              </div>
+
+              <span>WORK REQUESTS</span>
+            </div>
+
+            <strong>{stats.requests}</strong>
+
+            <p>
+              Client requests received
+            </p>
+          </div>
+
+          <div className="admin-stat-card yellow-card">
+            <div className="stat-card-top">
+              <div className="stat-icon">
+                ✓
+              </div>
+
+              <span>TASKS</span>
+            </div>
+
+            <strong>{stats.tasks}</strong>
+
+            <p>
+              Company tasks monitored
             </p>
           </div>
 

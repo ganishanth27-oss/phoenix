@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ntf_mwg82yzz",
+    "is_read": false,
+    "created_at": "2026-11-20T16:17:58.939Z",
+    "user_id": "bdeb333a-f0dd-42c6-ac7a-0b4c521902f0",
+    "title": "New Direct Work Request: REQ-166146",
+    "message": "NISHANTH G A requested App Development: \"NEXT GEN (App Development)\".",
+    "type": "project",
+    "link": "/admin/requests"
+  },
+  {
+    "id": "ntf_hh9m43vc",
+    "is_read": false,
+    "created_at": "2026-11-20T16:15:59.649Z",
+    "user_id": "bdeb333a-f0dd-42c6-ac7a-0b4c521902f0",
+    "title": "New Direct Work Request: REQ-939728",
+    "message": "Proxy Verification User requested Cloud & DevOps: \"AWS Cloud Architecture (Cloud & DevOps)\".",
+    "type": "project",
+    "link": "/admin/requests"
+  },
+  {
+    "id": "ntf_2kwotmnj",
+    "is_read": false,
+    "created_at": "2026-11-20T15:34:06.424Z",
+    "user_id": "bdeb333a-f0dd-42c6-ac7a-0b4c521902f0",
+    "title": "New Direct Work Request: REQ-409582",
+    "message": "Rohan Sharma requested AI & Machine Learning: \"Enterprise AI Assistant (AI & Machine Learning)\".",
+    "type": "project",
+    "link": "/admin/requests"
+  },
+  {
+    "id": "ntf_tv0824hk",
+    "is_read": false,
+    "created_at": "2026-11-20T15:29:58.257Z",
+    "user_id": "bdeb333a-f0dd-42c6-ac7a-0b4c521902f0",
+    "title": "New Direct Work Request: REQ-870760",
+    "message": "Automation Test requested Web Development: \"Phoenix Auto Test Portal (Web Development)\".",
+    "type": "project",
+    "link": "/admin/requests"
+  },
+  {
+    "id": "ntf_nloubhdm",
+    "is_read": false,
+    "created_at": "2026-11-20T14:33:37.344Z",
+    "user_id": "bdeb333a-f0dd-42c6-ac7a-0b4c521902f0",
+    "title": "New Direct Work Request: REQ-480300",
+    "message": "Aarav Patel requested Web & Cloud Development: \"Automated AI Inventory Management Portal (Web & Cloud Development)\".",
+    "type": "project",
+    "link": "/admin/requests"
+  }
+]

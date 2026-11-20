@@ -1,0 +1,10 @@
+{
+  "payee_name": "Phoenix Solutions",
+  "upi_id": "phoenixsolutions@icici",
+  "payment_description": "Phoenix Solutions Project Payment",
+  "qr_image_url": null,
+  "qr_type": "static",
+  "is_active": true,
+  "payment_instructions": "1. Open Google Pay, PhonePe, Paytm, or any UPI-supported app.\n2. Scan the Phoenix Solutions QR code or use the provided UPI ID.\n3. Verify the Payee Name displays 'Phoenix Solutions'.\n4. Enter the exact assigned amount and complete payment.\n5. Save or screenshot the transaction confirmation with UTR.\n6. Submit the screenshot and UTR in the form below for verification.",
+  "updated_at": "2026-11-20T14:07:29.374Z"
+}

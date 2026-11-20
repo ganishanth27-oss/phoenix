@@ -25,17 +25,21 @@ function Home() {
   // Phoenix AI Modal state
   const [aiModalOpen, setAiModalOpen] = useState(false);
 
-  // Public Contact / Enquiry Form State (NO LOGIN REQUIRED)
+  // Public Direct Work Request Form State (NO LOGIN REQUIRED)
   const [enquiryForm, setEnquiryForm] = useState({
     name: "",
-    email: "",
     phone: "",
-    subject: "",
+    email: "",
     serviceCategory: "",
+    project_title: "",
     message: "",
+    expected_budget: "",
+    expected_date: "",
+    reference_files: "",
   });
   const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
-  const [enquiryStatus, setEnquiryStatus] = useState({ text: "", type: "" });
+  const [enquiryStatus, setEnquiryStatus] = useState({ text: "", type: "", requestId: "" });
+  const [uploadingRefFile, setUploadingRefFile] = useState(false);
 
   // Core verified services definitions
   const coreHighlights = [
@@ -182,37 +186,45 @@ function Home() {
       }
     };
 
-    // Load portfolio projects
+    // Load portfolio projects safely
     const loadPortfolio = async () => {
       try {
         setLoadingPortfolio(true);
-        const res = await fetch("/api/public/portfolio");
-        if (res.ok) {
-          const text = await res.text();
-          if (text) {
-            try {
+        let loaded = false;
+
+        try {
+          const res = await fetch("/api/public/portfolio");
+          if (res.ok) {
+            const text = await res.text();
+            if (text) {
               const json = JSON.parse(text);
-              if (json.data && json.data.length > 0) {
-                setPortfolioProjects(json.data);
+              const list = json.data || json.projects || [];
+              if (Array.isArray(list) && list.length > 0) {
+                setPortfolioProjects(list);
+                loaded = true;
                 return;
               }
-            } catch (parseErr) {
-              console.warn("Portfolio JSON parse notice:", parseErr);
             }
           }
+        } catch (fetchErr) {
+          console.warn("Portfolio API notice:", fetchErr.message);
         }
-        // Direct Supabase query fallback
-        const { data } = await supabase
-          .from("project_submissions")
-          .select("id, title, description, service_category, client_name, completion_date, technologies_used, thumbnail_url")
-          .eq("status", "Approved")
-          .eq("is_published", true)
-          .order("created_at", { ascending: false });
-        if (data && data.length > 0) {
-          setPortfolioProjects(data);
+
+        if (!loaded) {
+          // Direct Supabase query fallback
+          const { data, error } = await supabase
+            .from("project_submissions")
+            .select("id, title, description, service_category, client_name, completion_date, technologies_used, thumbnail_url")
+            .eq("status", "approved")
+            .eq("is_published", true)
+            .order("created_at", { ascending: false });
+
+          if (!error && data && data.length > 0) {
+            setPortfolioProjects(data);
+          }
         }
       } catch (err) {
-        console.error("Portfolio load error:", err);
+        console.warn("Portfolio loading completed:", err.message);
       } finally {
         setLoadingPortfolio(false);
       }
@@ -223,12 +235,59 @@ function Home() {
     loadPortfolio();
   }, []);
 
-  // Handle Public Project Enquiry Submission (No auth required)
+  // Handle reference file upload for work request
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size must be under 10MB.");
+      return;
+    }
+
+    setUploadingRefFile(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const safeName = `ref_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = `requests/${safeName}`;
+
+      const { data, error } = await supabase.storage
+        .from("reference-files")
+        .upload(filePath, file, { upsert: true });
+
+      if (error) {
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("reference-files")
+        .getPublicUrl(filePath);
+
+      setEnquiryForm((prev) => ({ ...prev, reference_files: publicUrl }));
+      alert("Reference file uploaded successfully!");
+    } catch (err) {
+      console.warn("Storage upload fallback:", err);
+      // Fallback: note file name if storage bucket restricts anonymous
+      setEnquiryForm((prev) => ({ ...prev, reference_files: file.name }));
+    } finally {
+      setUploadingRefFile(false);
+    }
+  };
+
+  // Handle Public Project Enquiry Submission / Direct Work Request (No auth required)
   const handleEnquirySubmit = async (e) => {
     e.preventDefault();
-    if (!enquiryForm.name.trim() || !enquiryForm.email.trim() || !enquiryForm.message.trim()) {
+    if (!enquiryForm.name.trim() || !enquiryForm.email.trim()) {
       setEnquiryStatus({
-        text: "Please provide your name, valid email, and project details.",
+        text: "Please provide your full name and a valid email address.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (!enquiryForm.message.trim() && !enquiryForm.project_title.trim()) {
+      setEnquiryStatus({
+        text: "Please describe your project requirements.",
         type: "error",
       });
       return;
@@ -245,65 +304,31 @@ function Home() {
     }
 
     setSubmittingEnquiry(true);
-    setEnquiryStatus({ text: "", type: "" });
+    setEnquiryStatus({ text: "", type: "", requestId: "" });
 
     try {
-      // Correctly map form fields: sending both service_interest & serviceCategory
       const payload = {
         name: enquiryForm.name.trim(),
         email: enquiryForm.email.trim(),
         phone: enquiryForm.phone?.trim() || null,
-        company: enquiryForm.subject?.trim() || null,
+        project_title: enquiryForm.project_title?.trim() || null,
+        company: enquiryForm.project_title?.trim() || null,
         service_interest: enquiryForm.serviceCategory || "General Inquiry",
         serviceCategory: enquiryForm.serviceCategory || "General Inquiry",
         message: enquiryForm.message.trim(),
+        expected_budget: enquiryForm.expected_budget?.trim() || null,
+        expected_date: enquiryForm.expected_date || null,
+        reference_files: enquiryForm.reference_files || null,
       };
 
-      let res;
-      try {
-        res = await fetch("/api/public/enquiry", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } catch (networkErr) {
-        // Direct Supabase fallback if backend server is not running or proxy unreachable
-        console.warn("Backend proxy unavailable, falling back to direct Supabase insertion:", networkErr);
-        const { data: directInsert, error: directErr } = await supabase
-          .from("contact_enquiries")
-          .insert({
-            name: payload.name,
-            email: payload.email.toLowerCase(),
-            phone: payload.phone,
-            company: payload.company,
-            service_interest: payload.service_interest,
-            message: payload.message,
-          })
-          .select("id")
-          .single();
+      const res = await fetch("/api/public/enquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-        if (directErr) {
-          throw new Error("Unable to send enquiry. Please check your network and try again.");
-        }
-
-        setEnquiryStatus({
-          text: "Thank you for contacting Phoenix Solutions! A Senior Project Manager will review your requirements and respond within 24 hours.",
-          type: "success",
-        });
-        setEnquiryForm({
-          name: "",
-          email: "",
-          phone: "",
-          subject: "",
-          serviceCategory: "",
-          message: "",
-        });
-        return;
-      }
-
-      // Safe response reading: reads response body as text first to prevent JSON parse errors
-      const responseText = await res.text();
       let json = null;
+      const responseText = await res.text();
       if (responseText) {
         try {
           json = JSON.parse(responseText);
@@ -312,27 +337,35 @@ function Home() {
         }
       }
 
-      if (!res.ok) {
-        const errorMsg = json?.message || json?.error || "Failed to submit enquiry. Please try again.";
+      if (!res.ok || !json?.success) {
+        const errorMsg = json?.message || json?.error || "Failed to submit project enquiry. Please check your details and try again.";
         throw new Error(errorMsg);
       }
 
+      const generatedId = json.request_id || "REQ-" + Math.floor(100000 + Math.random() * 900000);
+
       setEnquiryStatus({
-        text: json?.message || "Thank you for contacting Phoenix Solutions! A Senior Project Manager will review your requirements and respond within 24 hours.",
+        text:
+          "Your project enquiry has been submitted successfully! Our team will review your requirements and contact you shortly.",
         type: "success",
+        requestId: generatedId,
       });
+
       setEnquiryForm({
         name: "",
-        email: "",
         phone: "",
-        subject: "",
+        email: "",
         serviceCategory: "",
+        project_title: "",
         message: "",
+        expected_budget: "",
+        expected_date: "",
+        reference_files: "",
       });
     } catch (err) {
       console.error("Enquiry submission error:", err);
       setEnquiryStatus({
-        text: err.message || "Failed to submit enquiry. Please try again.",
+        text: err.message || "Failed to submit work request. Please try again.",
         type: "error",
       });
     } finally {
@@ -380,11 +413,11 @@ function Home() {
 
           {/* Desktop Navigation Links */}
           <nav className="home-nav-links" aria-label="Main Navigation">
-            <a href="#hero">Home</a>
-            <a href="#services">Services</a>
-            <a href="#projects">Projects</a>
-            <a href="#about">About</a>
-            <a href="#contact">Contact</a>
+            <a href="#hero" onClick={(e) => { e.preventDefault(); document.getElementById("hero")?.scrollIntoView({ behavior: "smooth" }); }}>Home</a>
+            <a href="#services" onClick={(e) => { e.preventDefault(); document.getElementById("services")?.scrollIntoView({ behavior: "smooth" }); }}>Services</a>
+            <a href="#projects" onClick={(e) => { e.preventDefault(); document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" }); }}>Projects</a>
+            <a href="#about" onClick={(e) => { e.preventDefault(); document.getElementById("about")?.scrollIntoView({ behavior: "smooth" }); }}>About Us</a>
+            <a href="#contact" onClick={(e) => { e.preventDefault(); document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" }); }}>Contact Us</a>
           </nav>
 
           {/* Right Action Items: Phoenix AI Button & Auth Portals */}
@@ -399,7 +432,7 @@ function Home() {
               <span className="nav-ai-pulse" />
             </button>
 
-            {/* Separate Admin & Manager Access */}
+            {/* Separate Portals (No Customer login/account on public homepage) */}
             <div className="nav-auth-links">
               <Link to="/login" className="nav-auth-link" title="Manager Portal Access">
                 Manager Login
@@ -456,19 +489,19 @@ function Home() {
             </div>
 
             <nav className="drawer-links">
-              <a href="#hero" onClick={closeMobileMenu}>
+              <a href="#hero" onClick={(e) => { e.preventDefault(); closeMobileMenu(); document.getElementById("hero")?.scrollIntoView({ behavior: "smooth" }); }}>
                 <span className="drawer-link-icon">⚡</span> Home
               </a>
-              <a href="#services" onClick={closeMobileMenu}>
+              <a href="#services" onClick={(e) => { e.preventDefault(); closeMobileMenu(); document.getElementById("services")?.scrollIntoView({ behavior: "smooth" }); }}>
                 <span className="drawer-link-icon">🌐</span> Services
               </a>
-              <a href="#projects" onClick={closeMobileMenu}>
+              <a href="#projects" onClick={(e) => { e.preventDefault(); closeMobileMenu(); document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" }); }}>
                 <span className="drawer-link-icon">📁</span> Projects
               </a>
-              <a href="#about" onClick={closeMobileMenu}>
+              <a href="#about" onClick={(e) => { e.preventDefault(); closeMobileMenu(); document.getElementById("about")?.scrollIntoView({ behavior: "smooth" }); }}>
                 <span className="drawer-link-icon">🛡️</span> About Phoenix
               </a>
-              <a href="#contact" onClick={closeMobileMenu}>
+              <a href="#contact" onClick={(e) => { e.preventDefault(); closeMobileMenu(); document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" }); }}>
                 <span className="drawer-link-icon">✉️</span> Contact Us
               </a>
             </nav>
@@ -509,33 +542,33 @@ function Home() {
 
               {/* Main Heading */}
               <h1 className="hero-main-title">
-                PHOENIX <span className="title-gradient-gold">SOLUTIONS</span>
+                Have an Idea? <span className="title-gradient-gold">Let's Make It Happen.</span>
               </h1>
 
               {/* Subheading */}
               <h2 className="hero-subheading">
-                Creating Beyond Limits
+                Phoenix Solutions • Creating Beyond Limits
               </h2>
 
               {/* Description */}
               <p className="hero-description">
-                Get instant answers, explore our services and connect with Phoenix Solutions through an intelligent AI-powered experience. From high-throughput cloud architectures to precision 3D blueprints and viral digital campaigns.
+                From creative designs to advanced digital solutions, Phoenix Solutions helps turn your ideas into reality. Tell us what you need, and our team will take it forward.
               </p>
 
-              {/* Two Mandatory Buttons */}
+              {/* Two Prominent Action Buttons */}
               <div className="hero-cta-group">
+                <a href="#start-project" className="hero-btn-primary">
+                  <span>Request a Service</span>
+                  <span className="btn-arrow">↓</span>
+                </a>
+
                 <button
-                  className="hero-btn-primary"
+                  className="hero-btn-secondary"
                   onClick={() => setAiModalOpen(true)}
                 >
                   <span className="btn-sparkle">✦</span>
-                  <span>Start Chat Now</span>
+                  <span>Chat With Phoenix AI</span>
                 </button>
-
-                <a href="#services" className="hero-btn-secondary">
-                  <span>Explore Our Services</span>
-                  <span className="btn-arrow">↓</span>
-                </a>
               </div>
 
               {/* Trust Metric Pillars */}
@@ -613,7 +646,242 @@ function Home() {
         </section>
 
         {/* =====================================================
-            9. PROJECTS / PORTFOLIO SECTION
+            4. HOW IT WORKS SECTION (Simple 3-Step Process)
+        ===================================================== */}
+        <section id="how-it-works" className="home-section how-it-works-section">
+          <div className="home-container">
+            <div className="section-header">
+              <div className="section-pill">
+                <span>✦</span>
+                <span>EFFORTLESS WORKFLOW</span>
+              </div>
+              <h2 className="section-title">
+                How It Works <span className="title-gradient-gold">In 3 Simple Steps</span>
+              </h2>
+              <p className="section-subtitle">
+                We have eliminated all unnecessary complexity. Starting a digital or creative project with Phoenix Solutions takes under two minutes.
+              </p>
+            </div>
+
+            <div className="how-it-works-grid">
+              <div className="step-card">
+                <div className="step-number-badge">STEP 1</div>
+                <div className="step-icon">💡</div>
+                <h3 className="step-title">Tell Us Your Idea</h3>
+                <p className="step-desc">
+                  Submit your project requirements directly through our online request form below. No account creation or password required.
+                </p>
+              </div>
+
+              <div className="step-card highlight-step">
+                <div className="step-number-badge gold-badge">STEP 2</div>
+                <div className="step-icon">🤝</div>
+                <h3 className="step-title">Our Team Connects With You</h3>
+                <p className="step-desc">
+                  A dedicated Senior Project Manager reviews your requirements, discusses your goals, and prepares tailored milestones and cost estimates.
+                </p>
+              </div>
+
+              <div className="step-card">
+                <div className="step-number-badge">STEP 3</div>
+                <div className="step-icon">🚀</div>
+                <h3 className="step-title">Start Your Project</h3>
+                <p className="step-desc">
+                  Once approved, your project begins immediately. Track progress, review deliverables, and make secure UPI payments anytime.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            5. START YOUR PROJECT (Direct Customer Request Form)
+        ===================================================== */}
+        <section id="start-project" className="home-section start-project-section">
+          <div className="home-container">
+            <div className="start-project-wrapper">
+              <div className="start-project-header">
+                <div className="section-pill">
+                  <span>✦</span>
+                  <span>DIRECT WORK REQUEST</span>
+                </div>
+                <h2 className="section-title">
+                  Start Your <span className="title-gradient-blue">Project</span>
+                </h2>
+                <p className="section-subtitle">
+                  Tell us what you need. Our team will review your brief and contact you directly.
+                </p>
+              </div>
+
+              {enquiryStatus.text && (
+                <div className={`work-request-alert ${enquiryStatus.type}`} role="alert">
+                  <div className="alert-top">
+                    <span className="alert-icon">{enquiryStatus.type === "success" ? "✓" : "⚠"}</span>
+                    <strong>{enquiryStatus.text}</strong>
+                  </div>
+                  {enquiryStatus.requestId && (
+                    <div className="alert-req-badge">
+                      <span>Your Unique Request ID:</span>
+                      <code>{enquiryStatus.requestId}</code>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <form onSubmit={handleEnquirySubmit} className="direct-project-form">
+                <div className="form-grid-3">
+                  <div className="form-group">
+                    <label htmlFor="req-name">
+                      Full Name <span className="form-req-star">*</span>
+                    </label>
+                    <input
+                      id="req-name"
+                      type="text"
+                      required
+                      placeholder="e.g. Rahul Sharma"
+                      value={enquiryForm.name}
+                      onChange={(e) => setEnquiryForm({ ...enquiryForm, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="req-phone">
+                      Mobile Number <span className="form-req-star">*</span>
+                    </label>
+                    <input
+                      id="req-phone"
+                      type="tel"
+                      required
+                      placeholder="e.g. +91 98765 43210"
+                      value={enquiryForm.phone}
+                      onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="req-email">
+                      Email Address <span className="form-req-star">*</span>
+                    </label>
+                    <input
+                      id="req-email"
+                      type="email"
+                      required
+                      placeholder="e.g. rahul@example.com"
+                      value={enquiryForm.email}
+                      onChange={(e) => setEnquiryForm({ ...enquiryForm, email: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label htmlFor="req-service">
+                      Select Service <span className="form-req-star">*</span>
+                    </label>
+                    <select
+                      id="req-service"
+                      required
+                      value={enquiryForm.serviceCategory}
+                      onChange={(e) => setEnquiryForm({ ...enquiryForm, serviceCategory: e.target.value })}
+                    >
+                      <option value="">Select a service category...</option>
+                      {(services.length > 0 ? services : coreHighlights).map((s, idx) => (
+                        <option key={s.id || idx} value={s.name || s.title}>
+                          {s.name || s.title}
+                        </option>
+                      ))}
+                      <option value="Custom Enterprise Solution">Other / Custom Digital Solution</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="req-title">
+                      Project Title <span className="form-req-star">*</span>
+                    </label>
+                    <input
+                      id="req-title"
+                      type="text"
+                      required
+                      placeholder="e.g. E-Commerce Web Portal & Mobile App"
+                      value={enquiryForm.project_title}
+                      onChange={(e) => setEnquiryForm({ ...enquiryForm, project_title: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="req-message">
+                    Describe Your Requirements <span className="form-req-star">*</span>
+                  </label>
+                  <textarea
+                    id="req-message"
+                    required
+                    rows={4}
+                    placeholder="Tell us what you want to build, key features, reference designs, or goals..."
+                    value={enquiryForm.message}
+                    onChange={(e) => setEnquiryForm({ ...enquiryForm, message: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-grid-3">
+                  <div className="form-group">
+                    <label htmlFor="req-budget">Expected Budget (Optional)</label>
+                    <input
+                      id="req-budget"
+                      type="text"
+                      placeholder="e.g. ₹30,000 - ₹50,000"
+                      value={enquiryForm.expected_budget}
+                      onChange={(e) => setEnquiryForm({ ...enquiryForm, expected_budget: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="req-date">Expected Completion Date (Optional)</label>
+                    <input
+                      id="req-date"
+                      type="date"
+                      value={enquiryForm.expected_date}
+                      onChange={(e) => setEnquiryForm({ ...enquiryForm, expected_date: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="req-file">Upload Reference Files (Optional)</label>
+                    <div className="file-input-wrapper">
+                      <input
+                        id="req-file"
+                        type="file"
+                        onChange={handleFileUpload}
+                      />
+                      {uploadingRefFile && <span className="file-uploading-txt">Uploading...</span>}
+                      {enquiryForm.reference_files && (
+                        <span className="file-attached-txt">✓ File attached</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="submit-work-request-btn"
+                  disabled={submittingEnquiry || uploadingRefFile}
+                >
+                  {submittingEnquiry ? (
+                    <span>Submitting Your Work Request...</span>
+                  ) : (
+                    <>
+                      <span>Submit My Work Request</span>
+                      <span className="btn-arrow">→</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            6. OUR PROJECTS / PORTFOLIO SECTION
         ===================================================== */}
         <section id="projects" className="home-section projects-section">
           <div className="home-container">
@@ -757,7 +1025,53 @@ function Home() {
         )}
 
         {/* =====================================================
-            ABOUT SECTION (Enterprise Advantage & Transparency)
+            7. WHY CHOOSE PHOENIX SOLUTIONS
+        ===================================================== */}
+        <section className="home-section why-choose-section">
+          <div className="home-container">
+            <div className="section-header">
+              <div className="section-pill">
+                <span>✦</span>
+                <span>ENTERPRISE STANDARDS</span>
+              </div>
+              <h2 className="section-title">
+                Why Choose <span className="title-gradient-blue">Phoenix Solutions</span>
+              </h2>
+              <p className="section-subtitle">
+                Built for speed, security, and exceptional craftsmanship with zero friction.
+              </p>
+            </div>
+
+            <div className="why-choose-grid">
+              <div className="why-card">
+                <div className="why-icon">🛡️</div>
+                <h3>NDA Protected & Confidential</h3>
+                <p>Every brief, dataset, and deliverable is shielded by strict enterprise-grade confidentiality guarantees.</p>
+              </div>
+
+              <div className="why-card">
+                <div className="why-icon">⚡</div>
+                <h3>Direct Dedicated Manager</h3>
+                <p>No endless ticketing queues. An assigned Senior Manager oversees your project milestones from start to launch.</p>
+              </div>
+
+              <div className="why-card">
+                <div className="why-icon">💎</div>
+                <h3>Transparent Pricing & UPI QR</h3>
+                <p>Clear advance schedules, verified receipts, and instant UPI payments with complete ledger transparency.</p>
+              </div>
+
+              <div className="why-card">
+                <div className="why-icon">🤖</div>
+                <h3>Phoenix AI Intelligence</h3>
+                <p>Get instant guidance, explore service architectures, and brainstorm ideas 24/7 with our integrated AI assistant.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            8. ABOUT US SECTION (Enterprise Advantage & Transparency)
         ===================================================== */}
         <section id="about" className="home-section about-section">
           <div className="home-container">
@@ -834,7 +1148,35 @@ function Home() {
         </section>
 
         {/* =====================================================
-            10. CONTACT SECTION (Public Without Login)
+            9. PHOENIX AI ASSISTANT SHOWCASE BANNER
+        ===================================================== */}
+        <section className="home-section ai-feature-section">
+          <div className="home-container">
+            <div className="ai-banner-card">
+              <div className="ai-banner-content">
+                <div className="section-pill">
+                  <span>✦</span>
+                  <span>INTELLIGENT ADVISOR</span>
+                </div>
+                <h2>Meet Phoenix AI – Your 24/7 Digital Assistant</h2>
+                <p>
+                  Explore our technical stack, get instant pricing insights, brainstorm feature scopes, or draft project requirements in seconds with our specialized AI assistant.
+                </p>
+                <div className="ai-banner-actions">
+                  <button className="banner-ai-btn" onClick={() => setAiModalOpen(true)}>
+                    <span>✦</span> Launch Phoenix AI Assistant
+                  </button>
+                  <a href="#start-project" className="banner-req-btn">
+                    Start Your Project Request →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            10. CONTACT US SECTION (Public Without Login)
         ===================================================== */}
         <section id="contact" className="home-section contact-section">
           <div className="home-container">

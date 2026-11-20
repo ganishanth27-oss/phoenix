@@ -24,6 +24,11 @@ import ManagerPermissions from "./pages/admin/ManagerPermissions";
 import ActivityLogs from "./pages/admin/ActivityLogs";
 import Settings from "./pages/admin/Settings";
 import AdminSubmissions from "./pages/admin/AdminSubmissions";
+import AdminQRSettings from "./pages/admin/AdminQRSettings";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminProofVerification from "./pages/admin/AdminProofVerification";
+import AdminInvoices from "./pages/admin/AdminInvoices";
+import AdminReports from "./pages/admin/AdminReports";
 
 // ==================== MANAGER ====================
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
@@ -35,6 +40,7 @@ import ManagerTasks from "./pages/manager/ManagerTasks";
 import ManagerFiles from "./pages/manager/ManagerFiles";
 import ManagerReviewWork from "./pages/manager/ManagerReviewWork";
 import ManagerReports from "./pages/manager/ManagerReports";
+import ManagerFinalAmount from "./pages/manager/ManagerFinalAmount";
 
 // ==================== USER ====================
 import UserDashboard from "./pages/user/UserDashboard";
@@ -44,16 +50,32 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ManagerPermissionRoute from "./components/ManagerPermissionRoute";
 
 function App() {
+  // Show splash screen only on initial visit per session
+  const [showSplash, setShowSplash] = useState(() => {
+    // If the user is on a direct sub-route or has already seen splash in this tab, skip splash
+    if (typeof window !== "undefined") {
+      const isSubRoute = window.location.pathname !== "/";
+      const alreadySeen = sessionStorage.getItem("phoenix_splash_seen");
+      if (isSubRoute || alreadySeen) {
+        return false;
+      }
+    }
+    return true;
+  });
 
-  // Show splash screen when website first opens
-  const [showSplash, setShowSplash] = useState(true);
+  const handleSplashFinish = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("phoenix_splash_seen", "true");
+    }
+    setShowSplash(false);
+  };
 
   // ==================== SPLASH SCREEN ====================
 
   if (showSplash) {
     return (
       <SplashScreen
-        onFinish={() => setShowSplash(false)}
+        onFinish={handleSplashFinish}
       />
     );
   }
@@ -214,6 +236,51 @@ function App() {
               }
             />
 
+            <Route
+              path="/admin/qr-settings"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminQRSettings />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/payments"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminPayments />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/proofs"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminProofVerification />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/invoices"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminInvoices />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/reports"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminReports />
+                </ProtectedRoute>
+              }
+            />
+
 
             {/* =====================================================
                 MANAGER
@@ -314,15 +381,33 @@ function App() {
               }
             />
 
+            <Route
+              path="/manager/final-amount"
+              element={
+                <ProtectedRoute allowedRoles={["manager"]}>
+                  <ManagerFinalAmount />
+                </ProtectedRoute>
+              }
+            />
+
 
             {/* =====================================================
-                USER
+                CUSTOMER / USER DASHBOARD
             ===================================================== */}
 
             <Route
               path="/user"
               element={
-                <ProtectedRoute allowedRoles={["user"]}>
+                <ProtectedRoute allowedRoles={["user", "admin", "manager"]}>
+                  <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["user", "admin", "manager"]}>
                   <UserDashboard />
                 </ProtectedRoute>
               }

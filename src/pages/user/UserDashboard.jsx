@@ -8,28 +8,48 @@ function UserDashboard() {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
-  const [requests, setRequests] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [services, setServices] = useState([]);
-
   const [loading, setLoading] = useState(true);
-  const [showRequestModal, setShowRequestModal] = useState(false);
-  const [selectedRequestDetails, setSelectedRequestDetails] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview"); // overview, pay_qr, upload_proof, history, receipts
 
-  const [requestForm, setRequestForm] = useState({
-    title: "",
-    description: "",
-    requirements: "",
-    service_id: "",
-    priority: "medium",
+  // Selected project for payment
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+
+  // Payment QR settings from backend
+  const [qrSettings, setQrSettings] = useState({
+    payee_name: "Phoenix Solutions",
+    upi_id: "phoenixsolutions@icici",
+    payment_description: "Phoenix Solutions Project Payment",
+    payment_instructions: "",
   });
+
+  // Proof submission state
+  const [proofForm, setProofForm] = useState({
+    amount_claimed: "",
+    payment_method: "UPI",
+    transaction_ref_id: "",
+    payment_date: new Date().toISOString().split("T")[0],
+    screenshot_url: "",
+    customer_notes: "",
+  });
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [submittingProof, setSubmittingProof] = useState(false);
+  const [proofStatusMsg, setProofStatusMsg] = useState({ text: "", type: "" });
+
+  // History & Receipts
+  const [proofHistory, setProofHistory] = useState([]);
+  const [verifiedTransactions, setVerifiedTransactions] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+
+  // Copy helper
+  const [copiedUPI, setCopiedUPI] = useState(false);
 
   useEffect(() => {
     loadDashboard();
   }, []);
 
-  async function loadDashboard() {
+  const loadDashboard = async () => {
     try {
       setLoading(true);
 
@@ -53,198 +73,282 @@ function UserDashboard() {
         return;
       }
 
-      if (profileData.status !== "active") {
-        await supabase.auth.signOut();
-        navigate("/login");
-        return;
-      }
-
       setProfile(profileData);
 
-      // Load active services
-      const { data: serviceData } = await supabase
-        .from("services")
-        .select("id, name, description")
-        .eq("status", "active")
-        .order("name");
-
-      setServices(serviceData || []);
-
-      // Load customer requests with service details
-      const { data: requestData, error: requestError } = await supabase
-        .from("user_requests")
-        .select(`
-          *,
-          services (
-            name
-          )
-        `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (requestError) {
-        console.error("Request loading error:", requestError);
+      // Fetch public QR configuration
+      try {
+        const qrRes = await fetch("/api/public/qr-settings");
+        const qrJson = await qrRes.json();
+        if (qrJson.success && qrJson.settings) {
+          setQrSettings(qrJson.settings);
+        }
+      } catch (e) {
+        console.error("QR settings fetch error:", e);
       }
 
-      setRequests(requestData || []);
-
-      // Load projects user is linked to
-      const { data: projectUsers, error: projectUsersError } = await supabase
+      // Load user projects
+      const { data: projectUsers } = await supabase
         .from("project_users")
         .select("project_id")
         .eq("user_id", user.id);
 
-      if (projectUsersError) {
-        console.error(projectUsersError);
-        setProjects([]);
-        return;
-      }
-
       const projectIds = (projectUsers || []).map((item) => item.project_id);
 
+      let fetchedProjects = [];
       if (projectIds.length > 0) {
-        const { data: projectData, error: projectError } = await supabase
+        const { data: projectData } = await supabase
           .from("projects")
           .select(`
             *,
-            services (
-              name
-            )
+            services (name)
           `)
           .in("id", projectIds)
           .order("created_at", { ascending: false });
 
-        if (projectError) {
-          console.error(projectError);
-        }
+        fetchedProjects = projectData || [];
+      }
 
-        setProjects(projectData || []);
-      } else {
-        setProjects([]);
+      // If user has no linked projects yet, also look up public projects / requests
+      if (fetchedProjects.length === 0) {
+        const { data: allProjs } = await supabase
+          .from("projects")
+          .select("*, services(name)")
+          .limit(3);
+        fetchedProjects = allProjs || [];
+      }
+
+      // Enrich projects with real-time financial balance from backend
+      const { data: { session } } = await supabase.auth.getSession();
+      const enriched = await Promise.all(
+        fetchedProjects.map(async (p) => {
+          try {
+            const fRes = await fetch(`/api/projects/${p.id}/financials`, {
+              headers: { Authorization: `Bearer ${session?.access_token || ""}` },
+            });
+            const fJson = await fRes.json();
+            return {
+              ...p,
+              financials: fJson.financials || {
+                total_cost: 0,
+                advance_assigned: 0,
+                verified_paid: 0,
+                remaining_balance: 0,
+                advance_status: "not_assigned",
+              },
+              proofs: fJson.proofs || [],
+              transactions: fJson.transactions || [],
+            };
+          } catch {
+            return { ...p, financials: {} };
+          }
+        })
+      );
+
+      setProjects(enriched);
+
+      if (enriched.length > 0) {
+        setSelectedProjectId(enriched[0].id);
+        const allUserProofs = enriched.flatMap((p) => p.proofs || []);
+        const allUserTxs = enriched.flatMap((p) => p.transactions || []);
+        setProofHistory(allUserProofs);
+        setVerifiedTransactions(allUserTxs);
+
+        // Prepopulate claimed amount with assigned advance if available
+        const firstFin = enriched[0].financials;
+        if (firstFin?.advance_assigned > 0 && firstFin?.verified_paid === 0) {
+          setProofForm((prev) => ({
+            ...prev,
+            amount_claimed: firstFin.advance_assigned,
+          }));
+        } else if (firstFin?.remaining_balance > 0) {
+          setProofForm((prev) => ({
+            ...prev,
+            amount_claimed: firstFin.remaining_balance,
+          }));
+        }
+      }
+
+      // Load in-app notifications
+      try {
+        const nRes = await fetch("/api/notifications", {
+          headers: { Authorization: `Bearer ${session?.access_token || ""}` },
+        });
+        const nJson = await nRes.json();
+        if (nJson.success) {
+          setNotifications(nJson.notifications || []);
+        }
+      } catch (e) {
+        console.error("Notifications fetch error:", e);
       }
     } catch (error) {
       console.error("Dashboard error:", error);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  // Handle request submission
-  async function handleSubmitRequest(event) {
-    event.preventDefault();
+  const handleCopyUPI = () => {
+    navigator.clipboard.writeText(qrSettings.upi_id);
+    setCopiedUPI(true);
+    setTimeout(() => setCopiedUPI(false), 2500);
+  };
 
-    if (!requestForm.title.trim()) {
-      alert("Please enter a request title.");
+  // Upload screenshot file to Supabase storage bucket `payment-proofs`
+  const handleScreenshotFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Screenshot file size must be less than 5MB.");
       return;
     }
 
-    if (!requestForm.description.trim()) {
-      alert("Please describe what you need.");
+    // Validate format
+    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+    if (!validTypes.includes(file.type)) {
+      alert("Invalid image format. Supported formats: JPG, JPEG, PNG, WEBP.");
       return;
     }
 
+    setUploadingImage(true);
     try {
-      setSubmitting(true);
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${profile?.id || "guest"}_${Date.now()}.${fileExt}`;
+      const filePath = `screenshots/${fileName}`;
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        alert("Your session has expired. Please login again.");
-        navigate("/login");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("user_requests")
-        .insert([
-          {
-            user_id: user.id,
-            title: requestForm.title.trim(),
-            description: requestForm.description.trim(),
-            requirements: requestForm.requirements.trim() || null,
-            service_id: requestForm.service_id || null,
-            priority: requestForm.priority,
-            status: "submitted",
-          },
-        ])
-        .select(`
-          *,
-          services (
-            name
-          )
-        `)
-        .single();
+      const { data, error } = await supabase.storage
+        .from("payment-proofs")
+        .upload(filePath, file, { upsert: true });
 
       if (error) {
-        console.error("Submit request error:", error);
-        alert(error.message);
-        return;
+        throw error;
       }
 
-      setRequests((previous) => [data, ...previous]);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("payment-proofs").getPublicUrl(filePath);
 
-      setRequestForm({
-        title: "",
-        description: "",
-        requirements: "",
-        service_id: "",
-        priority: "medium",
+      setProofForm((prev) => ({ ...prev, screenshot_url: publicUrl }));
+      alert("Screenshot uploaded successfully! Fill in your UTR number to submit.");
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Upload failed: " + err.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSubmitProof = async (e) => {
+    e.preventDefault();
+    if (!selectedProjectId) {
+      alert("Please select a project.");
+      return;
+    }
+
+    if (!proofForm.screenshot_url) {
+      alert("Please upload your payment confirmation screenshot.");
+      return;
+    }
+
+    if (!proofForm.transaction_ref_id.trim()) {
+      alert("Please enter the official UTR / Transaction Reference ID from your UPI app.");
+      return;
+    }
+
+    setSubmittingProof(true);
+    setProofStatusMsg({ text: "", type: "" });
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const res = await fetch("/api/customer/payment-proofs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          project_id: selectedProjectId,
+          amount_claimed: Number(proofForm.amount_claimed),
+          payment_method: proofForm.payment_method,
+          transaction_ref_id: proofForm.transaction_ref_id.trim(),
+          payment_date: proofForm.payment_date,
+          screenshot_url: proofForm.screenshot_url,
+          customer_notes: proofForm.customer_notes,
+        }),
       });
 
-      setShowRequestModal(false);
-    } catch (error) {
-      console.error(error);
-      alert("Something went wrong while submitting the request.");
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Failed to submit payment proof.");
+      }
+
+      setProofStatusMsg({
+        text: "Payment proof submitted successfully! Our treasury team will verify your payment against bank records shortly.",
+        type: "success",
+      });
+
+      // Reset form
+      setProofForm({
+        amount_claimed: "",
+        payment_method: "UPI",
+        transaction_ref_id: "",
+        payment_date: new Date().toISOString().split("T")[0],
+        screenshot_url: "",
+        customer_notes: "",
+      });
+
+      await loadDashboard();
+    } catch (err) {
+      setProofStatusMsg({ text: err.message, type: "error" });
     } finally {
-      setSubmitting(false);
+      setSubmittingProof(false);
     }
-  }
+  };
 
-  // Helpers
-  const activeRequests = requests.filter(
-    (request) => !["completed", "rejected"].includes(request.status)
-  ).length;
+  const activeProject =
+    projects.find((p) => p.id === selectedProjectId) || projects[0] || null;
+  const fin = activeProject?.financials || {};
 
-  const completedRequests = requests.filter(
-    (request) => request.status === "completed"
-  ).length;
+  // Financial calculations
+  const totalCost = Number(fin.total_cost || 0);
+  const advanceAssigned = Number(fin.advance_assigned || 0);
+  const verifiedPaid = Number(fin.verified_paid || 0);
+  const remainingBalance = Math.max(0, totalCost - verifiedPaid);
+  const progressPercent = totalCost > 0 ? Math.min(100, Math.round((verifiedPaid / totalCost) * 100)) : 0;
 
-  const activeProjects = projects.filter(
-    (project) => !["completed", "on_hold"].includes(project.status)
-  ).length;
+  // Payable amount suggestion
+  const payableAmount =
+    advanceAssigned > 0 && verifiedPaid === 0 ? advanceAssigned : remainingBalance;
 
-  function getStatusBadge(status) {
-    switch (status) {
-      case "completed":
-        return <span className="phoenix-badge phoenix-badge-success"><span className="phoenix-badge-dot" /> Completed</span>;
-      case "in_progress":
-        return <span className="phoenix-badge phoenix-badge-info"><span className="phoenix-badge-dot" /> In Progress</span>;
-      case "assigned":
-        return <span className="phoenix-badge phoenix-badge-warning"><span className="phoenix-badge-dot" /> Assigned</span>;
-      case "rejected":
-        return <span className="phoenix-badge phoenix-badge-danger"><span className="phoenix-badge-dot" /> Rejected</span>;
-      case "submitted":
-      default:
-        return <span className="phoenix-badge phoenix-badge-primary"><span className="phoenix-badge-dot" /> Submitted</span>;
-    }
-  }
+  // Generate UPI URI
+  const upiUri = `upi://pay?pa=${encodeURIComponent(
+    qrSettings.upi_id || "phoenixsolutions@icici"
+  )}&pn=${encodeURIComponent(
+    qrSettings.payee_name || "Phoenix Solutions"
+  )}&tn=${encodeURIComponent(
+    `${activeProject?.name || "Phoenix"} Payment`
+  )}&am=${encodeURIComponent(payableAmount || "0")}&cu=INR`;
 
-  function formatDate(date) {
-    if (!date) return "—";
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
+  // Use the exact QR code image uploaded by Admin if provided; otherwise fallback to vector QR generator
+  const activeQrImageUrl = qrSettings.qr_image_url
+    ? qrSettings.qr_image_url
+    : `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+        upiUri
+      )}&color=030914&bgcolor=ffffff&qzone=2`;
+
+  const isQrActive = qrSettings.is_active !== false;
 
   const navigation = [
     {
-      label: "Workspace Overview",
-      path: "/user",
-      icon: "⌂",
+      label: "CUSTOMER PORTAL",
+      items: [
+        { label: "Payment Overview", path: "/dashboard", icon: "⌂" },
+        { label: "Public Website", path: "/", icon: "🌐" },
+      ],
     },
   ];
 
@@ -252,452 +356,512 @@ function UserDashboard() {
     return (
       <div className="user-dashboard-loading">
         <div className="user-loading-spinner" />
-        <p>Loading your client workspace...</p>
+        <p>Loading Your Phoenix Customer Portal...</p>
       </div>
     );
   }
 
   return (
-    <DashboardLayout
-      profile={profile}
-      navigation={navigation}
-      title="Client Workspace"
-    >
-      <div className="user-dashboard-page">
-        {/* =====================================================
-            TOP WELCOME HERO
-        ===================================================== */}
-        <section className="user-welcome-banner">
-          <div className="welcome-banner-text">
-            <div className="banner-eyebrow">
-              <span className="dot" />
-              <span>PHOENIX CLIENT PORTAL</span>
-            </div>
-            <h1>
-              Welcome back, {profile?.name?.split(" ")[0] || "Client"}
-            </h1>
+    <DashboardLayout title="Customer Payment Portal" navigation={navigation}>
+      <div className="customer-portal-page">
+        {/* Portal Header */}
+        <div className="portal-header-row">
+          <div>
+            <span className="portal-badge">CLIENT SECURE PORTAL</span>
+            <h1>Welcome, {profile?.name || "Client"}</h1>
             <p>
-              Track your service deliverables, submit new technical requests, and inspect real-time progress.
+              Manage your project finances, view assigned advance schedules, make instant UPI QR payments, and upload proof of payment.
             </p>
           </div>
 
-          <div className="welcome-banner-actions">
-            <button
-              className="banner-primary-btn"
-              onClick={() => setShowRequestModal(true)}
-            >
-              <span>+</span>
-              <span>New Request</span>
-            </button>
-            <button
-              className="banner-refresh-btn"
-              onClick={loadDashboard}
-              title="Refresh workspace data"
-            >
-              ↻ Refresh
-            </button>
-          </div>
-        </section>
-
-        {/* =====================================================
-            KEY METRICS
-        ===================================================== */}
-        <section className="user-metrics-grid">
-          <div className="user-metric-card">
-            <div className="metric-header">
-              <span className="metric-title">TOTAL REQUESTS</span>
-              <span className="metric-icon blue">📋</span>
-            </div>
-            <strong className="metric-number">{requests.length}</strong>
-            <span className="metric-note">Lifetime service submissions</span>
-          </div>
-
-          <div className="user-metric-card">
-            <div className="metric-header">
-              <span className="metric-title">ACTIVE REQUESTS</span>
-              <span className="metric-icon amber">⏳</span>
-            </div>
-            <strong className="metric-number">{activeRequests}</strong>
-            <span className="metric-note">Under scoping or in progress</span>
-          </div>
-
-          <div className="user-metric-card">
-            <div className="metric-header">
-              <span className="metric-title">COMPLETED DELIVERIES</span>
-              <span className="metric-icon green">✓</span>
-            </div>
-            <strong className="metric-number">{completedRequests}</strong>
-            <span className="metric-note">Verified & handed over</span>
-          </div>
-
-          <div className="user-metric-card">
-            <div className="metric-header">
-              <span className="metric-title">ASSIGNED PROJECTS</span>
-              <span className="metric-icon indigo">📁</span>
-            </div>
-            <strong className="metric-number">{projects.length}</strong>
-            <span className="metric-note">{activeProjects} actively managed</span>
-          </div>
-        </section>
-
-        {/* =====================================================
-            MAIN DUAL COLUMN WORKSPACE
-        ===================================================== */}
-        <div className="user-columns-grid">
-          {/* LEFT: REQUESTS TRACKING */}
-          <section className="user-card-panel">
-            <div className="panel-header">
-              <div>
-                <h2>Service Requests</h2>
-                <p>Track statuses, specifications, and manager assignments</p>
-              </div>
-              <button
-                className="panel-link-btn"
-                onClick={() => setShowRequestModal(true)}
+          {projects.length > 0 && (
+            <div className="project-selector-wrap">
+              <label>Current Active Project:</label>
+              <select
+                value={selectedProjectId}
+                onChange={(e) => {
+                  setSelectedProjectId(e.target.value);
+                  const sel = projects.find((p) => p.id === e.target.value);
+                  if (sel?.financials) {
+                    const f = sel.financials;
+                    setProofForm((prev) => ({
+                      ...prev,
+                      amount_claimed:
+                        f.advance_assigned > 0 && f.verified_paid === 0
+                          ? f.advance_assigned
+                          : f.remaining_balance || "",
+                    }));
+                  }
+                }}
               >
-                + Submit Request
-              </button>
-            </div>
-
-            {requests.length === 0 ? (
-              <div className="phoenix-empty">
-                <div className="phoenix-empty-icon">📝</div>
-                <h3 className="phoenix-empty-title">No Service Requests Yet</h3>
-                <p className="phoenix-empty-desc">
-                  Need web development, mobile apps, video editing, UI/UX design, or 3D blueprints? Submit your first request to get started.
-                </p>
-                <button
-                  className="phoenix-btn phoenix-btn-primary"
-                  onClick={() => setShowRequestModal(true)}
-                >
-                  Create Your First Request
-                </button>
-              </div>
-            ) : (
-              <div className="user-request-list">
-                {requests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="user-request-item"
-                    onClick={() => setSelectedRequestDetails(req)}
-                  >
-                    <div className="req-item-main">
-                      <div className="req-header-line">
-                        <strong className="req-item-title">{req.title}</strong>
-                        {getStatusBadge(req.status)}
-                      </div>
-                      <p className="req-item-desc">
-                        {req.description}
-                      </p>
-                      <div className="req-item-meta">
-                        <span className="meta-tag">
-                          🏷️ {req.services?.name || "General Service"}
-                        </span>
-                        <span className="meta-sep">•</span>
-                        <span className="meta-priority">
-                          Priority: <strong>{req.priority || "Medium"}</strong>
-                        </span>
-                        <span className="meta-sep">•</span>
-                        <span className="meta-date">
-                          Submitted {formatDate(req.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      className="req-details-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedRequestDetails(req);
-                      }}
-                      title="View details"
-                    >
-                      View →
-                    </button>
-                  </div>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.services?.name || "Project"})
+                  </option>
                 ))}
-              </div>
-            )}
-          </section>
+              </select>
+            </div>
+          )}
+        </div>
 
-          {/* RIGHT: ACTIVE PROJECTS & ACCOUNT INFO */}
-          <div className="user-side-column">
-            {/* Projects Panel */}
-            <section className="user-card-panel">
-              <div className="panel-header">
-                <div>
-                  <h2>Active Projects</h2>
-                  <p>Projects linked to your account</p>
-                </div>
-                <span className="phoenix-badge phoenix-badge-neutral">
-                  {projects.length} Total
-                </span>
-              </div>
+        {/* 6 Payment Overview Cards */}
+        <div className="customer-metrics-grid">
+          <div className="metric-card">
+            <span>Total Project Cost</span>
+            <strong>₹{totalCost.toLocaleString("en-IN")}</strong>
+            <small>Agreed project contract</small>
+          </div>
 
-              {projects.length === 0 ? (
-                <div className="empty-sub-panel">
-                  <span className="empty-icon-sm">📁</span>
-                  <p>No active project contracts linked yet.</p>
-                  <span>Once a request is approved, your project dashboard will appear here.</span>
-                </div>
-              ) : (
-                <div className="user-project-list">
-                  {projects.map((proj) => (
-                    <div key={proj.id} className="user-project-item">
-                      <div className="proj-top-line">
-                        <strong>{proj.name}</strong>
-                        {getStatusBadge(proj.status)}
-                      </div>
-                      <p className="proj-desc">
-                        {proj.description || "Active production project."}
-                      </p>
-                      <div className="proj-dates">
-                        <span>Due: {formatDate(proj.due_date)}</span>
-                        <span>Service: {proj.services?.name || "Standard"}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+          <div className="metric-card">
+            <span>Advance Assigned</span>
+            <strong className="val-cyan">₹{advanceAssigned.toLocaleString("en-IN")}</strong>
+            <small>Upfront deposit</small>
+          </div>
 
-            {/* Quick Consultation & Support Card */}
-            <section className="user-quick-contact-card">
-              <div className="quick-contact-icon">💬</div>
-              <h3>Need Custom Scoping?</h3>
-              <p>
-                Looking for architecture blueprints, custom cloud infrastructures, or multi-platform apps? Our project managers are available.
-              </p>
-              <button
-                className="phoenix-btn phoenix-btn-secondary"
-                onClick={() => setShowRequestModal(true)}
-              >
-                Inquire via Request Form
-              </button>
-            </section>
+          <div className="metric-card">
+            <span>Verified Amount Paid</span>
+            <strong className="val-green">₹{verifiedPaid.toLocaleString("en-IN")}</strong>
+            <small>Confirmed bank receipts</small>
+          </div>
+
+          <div className="metric-card">
+            <span>Remaining Balance</span>
+            <strong className="val-gold">₹{remainingBalance.toLocaleString("en-IN")}</strong>
+            <small>Balance due on completion</small>
+          </div>
+
+          <div className="metric-card">
+            <span>Next Payable Amount</span>
+            <strong className="val-cyan">₹{payableAmount.toLocaleString("en-IN")}</strong>
+            <small>{verifiedPaid === 0 ? "Advance payment" : "Remaining balance"}</small>
+          </div>
+
+          <div className="metric-card">
+            <span>Advance Status</span>
+            <span className={`status-pill pill-${fin.advance_status || "not_assigned"}`}>
+              {(fin.advance_status || "not_assigned").replace("_", " ")}
+            </span>
+            <small>{fin.advance_due_date ? `Due: ${fin.advance_due_date}` : "Standard schedule"}</small>
           </div>
         </div>
 
-        {/* =====================================================
-            REQUEST DETAILS MODAL
-        ===================================================== */}
-        {selectedRequestDetails && (
-          <div
-            className="phoenix-modal-overlay"
-            onClick={() => setSelectedRequestDetails(null)}
+        {/* Payment Progress Bar */}
+        <div className="payment-progress-card">
+          <div className="progress-info-row">
+            <span>Project Payment Completion: <strong>{progressPercent}%</strong></span>
+            <span>₹{verifiedPaid.toLocaleString("en-IN")} of ₹{totalCost.toLocaleString("en-IN")} Paid</span>
+          </div>
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+          </div>
+        </div>
+
+        {/* Portal Navigation Tabs */}
+        <div className="portal-tabs-bar">
+          <button
+            className={`tab-btn ${activeTab === "overview" ? "active" : ""}`}
+            onClick={() => setActiveTab("overview")}
           >
-            <div
-              className="phoenix-modal-card"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <div>
-                  <span className="modal-eyebrow">REQUEST DETAILS</span>
-                  <h2>{selectedRequestDetails.title}</h2>
-                </div>
-                <button
-                  className="modal-close-btn"
-                  onClick={() => setSelectedRequestDetails(null)}
-                >
-                  ×
-                </button>
+            💳 Pay via QR Code
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "upload_proof" ? "active" : ""}`}
+            onClick={() => setActiveTab("upload_proof")}
+          >
+            📤 Upload Payment Proof
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "history" ? "active" : ""}`}
+            onClick={() => setActiveTab("history")}
+          >
+            🕒 Payment History & Status
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "receipts" ? "active" : ""}`}
+            onClick={() => setActiveTab("receipts")}
+          >
+            📄 Invoices & Receipts ({verifiedTransactions.length})
+          </button>
+        </div>
+
+        {/* TAB 1: QR CODE PAYMENT */}
+        {activeTab === "overview" && (
+          <div className="qr-payment-container">
+            <div className="qr-pay-card">
+              <div className="pay-card-header">
+                <h2>Make Your Payment</h2>
+                <p>Scan with Google Pay, PhonePe, Paytm, or any UPI app to pay Phoenix Solutions.</p>
               </div>
 
-              <div className="modal-body">
-                <div className="detail-status-bar">
+              {!isQrActive ? (
+                <div className="qr-unavailable-alert">
+                  <span className="unavail-icon">⚠️</span>
                   <div>
-                    <span className="detail-label">Current Status:</span>
-                    {getStatusBadge(selectedRequestDetails.status)}
-                  </div>
-                  <div>
-                    <span className="detail-label">Priority:</span>
-                    <strong style={{ textTransform: "capitalize" }}>
-                      {selectedRequestDetails.priority || "Medium"}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="detail-label">Submitted On:</span>
-                    <span>{formatDate(selectedRequestDetails.created_at)}</span>
+                    <strong>Payment QR is currently unavailable.</strong>
+                    <p>Please contact Phoenix Solutions support or your assigned manager to request payment instructions.</p>
                   </div>
                 </div>
+              ) : (
+                <div className="qr-payment-split">
+                  {/* QR Code Presentation Box */}
+                  <div className="qr-box">
+                    <div className="qr-white-frame">
+                      <img
+                        src={activeQrImageUrl}
+                        alt="Phoenix Solutions Official Payment QR"
+                        className="qr-code-img"
+                      />
+                    </div>
 
-                <div className="detail-block">
-                  <label>Service Category</label>
-                  <p>{selectedRequestDetails.services?.name || "General Service"}</p>
-                </div>
+                    <div className="qr-details-strip">
+                      <span className="payee-lbl">Phoenix Solutions Payee Name</span>
+                      <strong className="payee-name">{qrSettings.payee_name || "Phoenix Solutions"}</strong>
 
-                <div className="detail-block">
-                  <label>Description</label>
-                  <p>{selectedRequestDetails.description}</p>
-                </div>
+                      <div className="upi-copy-row">
+                        <code>{qrSettings.upi_id || "phoenixsolutions@icici"}</code>
+                        <button className="copy-btn" onClick={handleCopyUPI}>
+                          {copiedUPI ? "✓ Copied!" : "Copy UPI ID"}
+                        </button>
+                      </div>
 
-                {selectedRequestDetails.requirements && (
-                  <div className="detail-block">
-                    <label>Additional Specifications & Requirements</label>
-                    <p>{selectedRequestDetails.requirements}</p>
+                      <div className="qr-action-buttons-row">
+                        <a
+                          href={activeQrImageUrl}
+                          download="Phoenix_Solutions_Payment_QR.png"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="download-qr-btn"
+                        >
+                          💾 Download QR Code
+                        </a>
+
+                        <a href={upiUri} className="open-upi-btn">
+                          📱 Open UPI App
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                )}
 
-                {selectedRequestDetails.admin_notes && (
-                  <div className="detail-block admin-notes">
-                    <label>Manager / Admin Notes</label>
-                    <p>{selectedRequestDetails.admin_notes}</p>
+                  {/* Instructions & Summary Box */}
+                  <div className="qr-instruction-box">
+                    <h3>Payment Breakdown</h3>
+                    <div className="breakdown-list">
+                      <div className="breakdown-item">
+                        <span>Project Name:</span>
+                        <strong>{activeProject?.name || "Phoenix Project"}</strong>
+                      </div>
+                      <div className="breakdown-item">
+                        <span>Total Project Cost:</span>
+                        <span>₹{totalCost.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="breakdown-item">
+                        <span>Advance Assigned:</span>
+                        <span>₹{advanceAssigned.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="breakdown-item">
+                        <span>Amount Already Paid:</span>
+                        <span className="green-txt">₹{verifiedPaid.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="breakdown-item highlight-row">
+                        <span>Current Payable Amount:</span>
+                        <strong className="gold-amt">₹{payableAmount.toLocaleString("en-IN")}</strong>
+                      </div>
+                    </div>
+
+                    <div className="steps-card">
+                      <h4>Customer Payment Instructions:</h4>
+                      <ol>
+                        <li>Open Google Pay, PhonePe, Paytm or another supported UPI application.</li>
+                        <li>Scan the displayed Phoenix Solutions QR code.</li>
+                        <li>Verify the recipient name (<strong>{qrSettings.payee_name || "Phoenix Solutions"}</strong>).</li>
+                        <li>Enter the assigned payment amount (<strong>₹{payableAmount.toLocaleString("en-IN")}</strong>).</li>
+                        <li>Complete the payment.</li>
+                        <li>Return to the Phoenix Solutions website.</li>
+                        <li>Upload the payment screenshot.</li>
+                        <li>Enter the transaction reference ID (UTR).</li>
+                        <li>Submit for verification.</li>
+                      </ol>
+                    </div>
+
+                    <div className="step-action-row">
+                      <button
+                        className="goto-upload-btn"
+                        onClick={() => setActiveTab("upload_proof")}
+                      >
+                        Upload Payment Proof →
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
-
-              <div className="modal-footer">
-                <button
-                  className="phoenix-btn phoenix-btn-secondary"
-                  onClick={() => setSelectedRequestDetails(null)}
-                >
-                  Close
-                </button>
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* =====================================================
-            SUBMIT NEW REQUEST MODAL
-        ===================================================== */}
-        {showRequestModal && (
-          <div
-            className="phoenix-modal-overlay"
-            onClick={() => setShowRequestModal(false)}
-          >
-            <div
-              className="phoenix-modal-card"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <div>
-                  <span className="modal-eyebrow">NEW SERVICE REQUEST</span>
-                  <h2>Submit Project Scope</h2>
+        {/* TAB 2: UPLOAD PAYMENT PROOF */}
+        {activeTab === "upload_proof" && (
+          <div className="upload-proof-card">
+            <div className="upload-card-header">
+              <h2>Upload Payment Proof</h2>
+              <p>
+                Submit your transaction screenshot and UTR reference number so our accounts team can confirm your payment.
+              </p>
+            </div>
+
+            {proofStatusMsg.text && (
+              <div className={`proof-alert ${proofStatusMsg.type}`}>
+                {proofStatusMsg.type === "success" ? "✓" : "⚠"} {proofStatusMsg.text}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitProof} className="proof-submission-form">
+              <div className="proof-form-grid">
+                <div className="form-group">
+                  <label>Customer Name</label>
+                  <input type="text" value={profile?.name || "Client"} disabled />
                 </div>
-                <button
-                  className="modal-close-btn"
-                  onClick={() => setShowRequestModal(false)}
-                >
-                  ×
-                </button>
+
+                <div className="form-group">
+                  <label>Project Name</label>
+                  <input type="text" value={activeProject?.name || "Phoenix Project"} disabled />
+                </div>
+
+                <div className="form-group">
+                  <label>Payment Amount (₹) <span className="req-star">*</span></label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={proofForm.amount_claimed}
+                    onChange={(e) =>
+                      setProofForm({ ...proofForm, amount_claimed: e.target.value })
+                    }
+                    placeholder="Enter exact paid amount"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Payment Method</label>
+                  <select
+                    value={proofForm.payment_method}
+                    onChange={(e) =>
+                      setProofForm({ ...proofForm, payment_method: e.target.value })
+                    }
+                  >
+                    <option value="UPI">UPI (Google Pay / PhonePe / Paytm / BHIM)</option>
+                    <option value="Bank Transfer">Bank Transfer (IMPS / NEFT / RTGS)</option>
+                    <option value="Other">Other Verified Method</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    Transaction Reference ID / UTR Number <span className="req-star">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={proofForm.transaction_ref_id}
+                    onChange={(e) =>
+                      setProofForm({ ...proofForm, transaction_ref_id: e.target.value })
+                    }
+                    placeholder="12-digit UPI reference number (e.g. 432109876543)"
+                    required
+                  />
+                  <span className="field-hint">Found on your UPI transaction receipt details screen.</span>
+                </div>
+
+                <div className="form-group">
+                  <label>Payment Date</label>
+                  <input
+                    type="date"
+                    value={proofForm.payment_date}
+                    onChange={(e) =>
+                      setProofForm({ ...proofForm, payment_date: e.target.value })
+                    }
+                    required
+                  />
+                </div>
               </div>
 
-              <form onSubmit={handleSubmitRequest} className="modal-form">
-                <div className="modal-body">
-                  <div className="form-group">
-                    <label className="phoenix-label">
-                      Request Title <span>*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="phoenix-input"
-                      placeholder="e.g. Corporate Web Application & Dashboard"
-                      value={requestForm.title}
-                      onChange={(e) =>
-                        setRequestForm({ ...requestForm, title: e.target.value })
-                      }
-                      required
+              {/* Drag and Drop Screenshot Upload Box */}
+              <div className="upload-dropzone">
+                <label className="dropzone-label">
+                  <span className="upload-icon">📸</span>
+                  <strong>Upload Payment Screenshot <span className="req-star">*</span></strong>
+                  <p>Click to browse or drop your screenshot (JPG, PNG, WEBP - Max 5MB)</p>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                    onChange={handleScreenshotFileChange}
+                    className="file-hidden-input"
+                  />
+                </label>
+
+                {uploadingImage && <div className="upload-spinner">Uploading screenshot...</div>}
+
+                {proofForm.screenshot_url && (
+                  <div className="screenshot-preview-box">
+                    <img
+                      src={proofForm.screenshot_url}
+                      alt="Uploaded Screenshot Preview"
+                      className="preview-img"
                     />
+                    <span className="preview-ok">✓ Screenshot attached</span>
                   </div>
+                )}
+              </div>
 
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="phoenix-label">Target Service</label>
-                      <select
-                        className="phoenix-select"
-                        value={requestForm.service_id}
-                        onChange={(e) =>
-                          setRequestForm({
-                            ...requestForm,
-                            service_id: e.target.value,
-                          })
-                        }
-                      >
-                        <option value="">Select Company Service</option>
-                        {services.map((svc) => (
-                          <option key={svc.id} value={svc.id}>
-                            {svc.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+              <div className="form-group">
+                <label>Optional Remarks / Notes</label>
+                <textarea
+                  rows="2"
+                  value={proofForm.customer_notes}
+                  onChange={(e) =>
+                    setProofForm({ ...proofForm, customer_notes: e.target.value })
+                  }
+                  placeholder="Any additional information about your transaction..."
+                />
+              </div>
 
-                    <div className="form-group">
-                      <label className="phoenix-label">Priority Level</label>
-                      <select
-                        className="phoenix-select"
-                        value={requestForm.priority}
-                        onChange={(e) =>
-                          setRequestForm({
-                            ...requestForm,
-                            priority: e.target.value,
-                          })
-                        }
-                      >
-                        <option value="low">Low Priority</option>
-                        <option value="medium">Medium Priority</option>
-                        <option value="high">High Priority</option>
-                        <option value="urgent">Urgent</option>
-                      </select>
-                    </div>
-                  </div>
+              <button
+                type="submit"
+                className="submit-proof-btn"
+                disabled={submittingProof || uploadingImage}
+              >
+                {submittingProof ? "Submitting Payment Proof..." : "Submit Payment Proof for Verification"}
+              </button>
+            </form>
+          </div>
+        )}
 
-                  <div className="form-group">
-                    <label className="phoenix-label">
-                      What do you need built? <span>*</span>
-                    </label>
-                    <textarea
-                      className="phoenix-textarea"
-                      placeholder="Provide comprehensive details about your objectives, timeline, deliverables, or brand specifications..."
-                      value={requestForm.description}
-                      onChange={(e) =>
-                        setRequestForm({
-                          ...requestForm,
-                          description: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="phoenix-label">
-                      Additional Requirements & References (Optional)
-                    </label>
-                    <textarea
-                      className="phoenix-textarea"
-                      rows={2}
-                      placeholder="Links to design mockups, repositories, cloud requirements, or architectural guidelines..."
-                      value={requestForm.requirements}
-                      onChange={(e) =>
-                        setRequestForm({
-                          ...requestForm,
-                          requirements: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="phoenix-btn phoenix-btn-secondary"
-                    onClick={() => setShowRequestModal(false)}
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="phoenix-btn phoenix-btn-primary"
-                    disabled={submitting}
-                  >
-                    {submitting ? "Submitting Request..." : "Submit to Manager"}
-                  </button>
-                </div>
-              </form>
+        {/* TAB 3: PAYMENT HISTORY & VERIFICATION STATUS */}
+        {activeTab === "history" && (
+          <div className="history-card">
+            <div className="card-top">
+              <h2>Your Submitted Payment Proofs</h2>
+              <span>{proofHistory.length} Submissions</span>
             </div>
+
+            {proofHistory.length === 0 ? (
+              <div className="history-empty">
+                You have not submitted any payment proofs yet. Pay via QR and upload your screenshot to track verification.
+              </div>
+            ) : (
+              <div className="table-scroll">
+                <table className="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Proof ID</th>
+                      <th>Amount Claimed</th>
+                      <th>Method & UTR</th>
+                      <th>Date</th>
+                      <th>Screenshot</th>
+                      <th>Verification Status</th>
+                      <th>Admin Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {proofHistory.map((p) => (
+                      <tr key={p.id}>
+                        <td>
+                          <strong>{p.id}</strong>
+                        </td>
+                        <td>
+                          <strong>₹{Number(p.amount_claimed || 0).toLocaleString("en-IN")}</strong>
+                        </td>
+                        <td>
+                          <span>{p.payment_method}</span>
+                          <code className="utr-code">{p.transaction_ref_id}</code>
+                        </td>
+                        <td>{p.payment_date || new Date(p.created_at).toLocaleDateString()}</td>
+                        <td>
+                          {p.screenshot_url ? (
+                            <a
+                              href={p.screenshot_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="view-link"
+                            >
+                              View Image ↗
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td>
+                          <span className={`status-pill pill-${p.verification_status}`}>
+                            {p.verification_status.replace("_", " ")}
+                          </span>
+                        </td>
+                        <td>
+                          {p.rejection_reason ? (
+                            <span className="reject-reason-txt">
+                              Rejected: {p.rejection_reason}
+                            </span>
+                          ) : (
+                            p.admin_remarks || "—"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: OFFICIAL INVOICES & RECEIPTS */}
+        {activeTab === "receipts" && (
+          <div className="receipts-card">
+            <div className="card-top">
+              <h2>Official Payment Receipts & Invoices</h2>
+              <span>{verifiedTransactions.length} Confirmed Receipts</span>
+            </div>
+
+            {verifiedTransactions.length === 0 ? (
+              <div className="history-empty">
+                No verified receipts yet. Once your payment proof is reviewed and confirmed by our treasury, official downloadable receipts appear here.
+              </div>
+            ) : (
+              <div className="receipt-list-grid">
+                {verifiedTransactions.map((tx) => (
+                  <div key={tx.id} className="client-receipt-card">
+                    <div className="client-receipt-header">
+                      <div>
+                        <span className="rcpt-num-badge">{tx.receipt_number || "PHX-REC-2026"}</span>
+                        <h3>{tx.project_name || "Phoenix Solutions Project"}</h3>
+                      </div>
+                      <span className="rcpt-verified-badge">✓ Verified & Audited</span>
+                    </div>
+
+                    <div className="client-receipt-body">
+                      <div className="rcpt-line">
+                        <span>Amount Received:</span>
+                        <strong className="amt-green">₹{Number(tx.amount || 0).toLocaleString("en-IN")}</strong>
+                      </div>
+                      <div className="rcpt-line">
+                        <span>Transaction UTR:</span>
+                        <code>{tx.transaction_ref_id}</code>
+                      </div>
+                      <div className="rcpt-line">
+                        <span>Payment Date:</span>
+                        <span>{tx.payment_date || new Date(tx.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="client-receipt-footer">
+                      <button
+                        className="print-receipt-btn"
+                        onClick={() => window.print()}
+                      >
+                        🖨 Print or Save Receipt (PDF)
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

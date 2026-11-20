@@ -24,6 +24,17 @@ function Projects() {
     priority: "medium",
   });
 
+  // Delete confirmation & financial protection modal
+  const [deleteConfirmProject, setDeleteConfirmProject] = useState(null);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 3500);
+  };
+
   // =========================================================
   // LOAD DATA
   // =========================================================
@@ -440,64 +451,41 @@ function Projects() {
   };
 
   // =========================================================
-  // DELETE PROJECT
+  // SAFE DELETE PROJECT (WITH FINANCIAL INTEGRITY PROTECTION)
   // =========================================================
 
-  const deleteProject = async (
-    projectId,
-    projectName
-  ) => {
-    const confirmed =
-      window.confirm(
-        `Are you sure you want to delete "${projectName}"?`
-      );
-
-    if (!confirmed) {
-      return;
-    }
+  const executeDeleteProject = async () => {
+    if (!deleteConfirmProject) return;
+    setIsDeletingProject(true);
+    setDeleteError("");
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/admin/projects/${deleteConfirmProject.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+      });
 
-      if (!user) {
-        navigate("/");
-        return;
+      const resJson = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        if (resJson.blocked) {
+          setDeleteError(resJson.error || "Cannot delete project with financial transactions.");
+          return;
+        }
+        throw new Error(resJson.error || "Failed to delete project");
       }
 
-      const {
-        error,
-      } = await supabase
-        .from("projects")
-        .delete()
-        .eq("id", projectId);
-
-      if (error) {
-        throw error;
-      }
-
-      await supabase
-        .from("activity_logs")
-        .insert({
-          user_id: user.id,
-          action: "delete_project",
-          description:
-            `Admin deleted project "${projectName}".`,
-        });
-
-      alert(
-        "Project deleted successfully."
-      );
-
+      showToast(`Project "${deleteConfirmProject.name}" deleted successfully.`);
+      setDeleteConfirmProject(null);
       await loadData();
     } catch (error) {
-      console.error(
-        "Delete project error:",
-        error
-      );
-
-      alert(error.message);
+      console.error("Delete project error:", error);
+      setDeleteError(error.message);
+    } finally {
+      setIsDeletingProject(false);
     }
   };
 
@@ -1462,12 +1450,10 @@ function Projects() {
                 {/* DELETE */}
 
                 <button
-                  onClick={() =>
-                    deleteProject(
-                      project.id,
-                      project.name
-                    )
-                  }
+                  onClick={() => {
+                    setDeleteError("");
+                    setDeleteConfirmProject(project);
+                  }}
                   style={{
                     width:
                       "100%",
@@ -1476,20 +1462,28 @@ function Projects() {
                     padding:
                       "10px",
                     border:
-                      "1px solid #fecaca",
+                      "1px solid #ef4444",
                     borderRadius:
                       "9px",
                     background:
-                      "#fff5f5",
+                      "rgba(239, 68, 68, 0.12)",
                     color:
-                      "#dc2626",
+                      "#f87171",
                     fontWeight:
                       "700",
                     cursor:
                       "pointer",
+                    display:
+                      "flex",
+                    alignItems:
+                      "center",
+                    justifyContent:
+                      "center",
+                    gap:
+                      "6px",
                   }}
                 >
-                  Delete Project
+                  🗑 Delete Project
                 </button>
 
               </div>
@@ -1499,6 +1493,151 @@ function Projects() {
 
         </div>
 
+      )}
+
+      {/* TOAST MESSAGE */}
+      {toastMessage && (
+        <div style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          background: "#0284c7",
+          color: "#ffffff",
+          padding: "12px 20px",
+          borderRadius: "10px",
+          boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
+          fontWeight: "600",
+          fontSize: "14px",
+          zIndex: 2000,
+        }}>
+          ✓ {toastMessage}
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL WITH FINANCIAL CHECK */}
+      {deleteConfirmProject && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px",
+          }}
+          onClick={() => !isDeletingProject && setDeleteConfirmProject(null)}
+        >
+          <div
+            style={{
+              background: "#071426",
+              border: "1px solid rgba(239, 68, 68, 0.35)",
+              borderRadius: "18px",
+              width: "100%",
+              maxWidth: "480px",
+              padding: "28px",
+              textAlign: "center",
+              color: "#f8fafc",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: "40px", marginBottom: "12px" }}>⚠️</div>
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "20px", color: "#f8fafc" }}>
+              Delete Project
+            </h3>
+            <p style={{ color: "#cbd5e1", fontSize: "14px", marginBottom: "16px" }}>
+              Are you sure you want to delete this project?
+            </p>
+
+            <div style={{
+              background: "rgba(0, 0, 0, 0.4)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              padding: "12px",
+              borderRadius: "8px",
+              marginBottom: "16px",
+              textAlign: "left",
+            }}>
+              <strong style={{ display: "block", color: "#f1f5f9", fontSize: "15px" }}>
+                {deleteConfirmProject.name}
+              </strong>
+              <small style={{ color: "#94a3b8" }}>
+                ID: {deleteConfirmProject.id}
+              </small>
+            </div>
+
+            {deleteError ? (
+              <div style={{
+                background: "rgba(239, 68, 68, 0.2)",
+                border: "1px solid #ef4444",
+                borderRadius: "8px",
+                padding: "12px",
+                marginBottom: "20px",
+                color: "#fca5a5",
+                fontSize: "13px",
+                textAlign: "left",
+                lineHeight: "1.5",
+              }}>
+                🛡️ <strong>Financial Protection Triggered:</strong>
+                <p style={{ margin: "4px 0 0 0" }}>{deleteError}</p>
+                <p style={{ margin: "6px 0 0 0", color: "#e2e8f0" }}>
+                  <em>Tip: Change the project status to <strong>Completed</strong> or <strong>On Hold</strong> instead of deleting to keep financial audit records intact.</em>
+                </p>
+              </div>
+            ) : (
+              <p style={{
+                fontSize: "12px",
+                color: "#94a3b8",
+                lineHeight: "1.5",
+                textAlign: "left",
+                background: "rgba(239, 68, 68, 0.08)",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                marginBottom: "20px",
+              }}>
+                🛡️ <strong>Safety Check:</strong> Projects with verified client transactions or invoices cannot be deleted to preserve financial audit compliance.
+              </p>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+              <button
+                type="button"
+                disabled={isDeletingProject}
+                onClick={() => setDeleteConfirmProject(null)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.1)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  color: "#cbd5e1",
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                }}
+              >
+                Cancel
+              </button>
+              {!deleteError && (
+                <button
+                  type="button"
+                  disabled={isDeletingProject}
+                  onClick={executeDeleteProject}
+                  style={{
+                    background: "#dc2626",
+                    border: "1px solid #ef4444",
+                    color: "#ffffff",
+                    padding: "10px 22px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontWeight: "700",
+                  }}
+                >
+                  {isDeletingProject ? "Checking & Deleting..." : "Confirm Delete"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
